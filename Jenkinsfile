@@ -29,7 +29,11 @@ pipeline {
     docker {
       // The full image, not -slim / -alpine: those omit git, which `checkout scm` needs.
       image 'node:22'
-      args '-u root:root'
+      // Jenkins runs the container as its own uid, which owns no home directory
+      // inside the image. Without these, npm and npx die with EACCES on /root
+      // during the very first build. Writing caches to /tmp keeps the container
+      // non-root, so nothing root-owned is left behind in a shared workspace.
+      args '-e HOME=/tmp -e NPM_CONFIG_CACHE=/tmp/.npm -e XDG_CACHE_HOME=/tmp/.cache'
     }
   }
 
