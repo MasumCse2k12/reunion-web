@@ -164,6 +164,17 @@ wrangler pages deploy dist --project-name sammalani-alumni
 
 Free tier includes unlimited bandwidth and a free `*.pages.dev` subdomain.
 
+### Option D — Jenkins, continuously (once you stop deploying by hand)
+
+The repository root has a `Jenkinsfile` that checks out
+[`MasumCse2k12/reunion-web`](https://github.com/MasumCse2k12/reunion-web), runs
+`npm ci` → `typecheck` → `build`, deploys to Vercel, then smoke-tests the deployed URL and fails the
+build on anything but a 200. `main` deploys to production; any other branch gets a preview URL.
+
+Full setup — plugins, the one credential, both job types, webhooks, and what to do when the agent
+has no Docker — is written out in the comment header of that file. Read it there rather than here,
+so the instructions cannot drift from the pipeline they describe.
+
 ### SPA routing
 
 `public/_redirects` (Netlify + Cloudflare) and `vercel.json` (Vercel) are both included, so deep
