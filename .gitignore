@@ -1,0 +1,23 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+build/
+.vercel/
+.netlify/
+
+# secrets — this repository is public, keep it that way
+.env
+.env.*
+!.env.example
+
+# local tooling / editor
+.claude/settings.local.json
+.idea/
+.vscode/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

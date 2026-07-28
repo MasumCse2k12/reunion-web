@@ -1,0 +1,137 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-bn: 'Noto Serif Bengali', 'Tiro Bangla', serif;
+
+  /* Deep school green */
+  --color-brand-50: #f0f7f3;
+  --color-brand-100: #dbeee3;
+  --color-brand-200: #b8dcc8;
+  --color-brand-300: #8bc2a5;
+  --color-brand-400: #57a17e;
+  --color-brand-500: #338060;
+  --color-brand-600: #1f6b4a;
+  --color-brand-700: #19553c;
+  --color-brand-800: #164431;
+  --color-brand-900: #123829;
+
+  /* Heritage gold */
+  --color-gold-50: #fdf9ee;
+  --color-gold-100: #faf0d3;
+  --color-gold-200: #f3dea1;
+  --color-gold-300: #e8c67a;
+  --color-gold-400: #dcab4b;
+  --color-gold-500: #c8912f;
+  --color-gold-600: #a67224;
+  --color-gold-700: #825720;
+
+  /* Warm paper neutrals */
+  --color-paper: #faf8f4;
+  --color-paper-2: #f3efe7;
+  --color-ink-400: #8b8578;
+  --color-ink-500: #6b6558;
+  --color-ink-600: #4a463d;
+  --color-ink-700: #33302a;
+  --color-ink-900: #1c1a16;
+}
+
+/* Elder-friendly base: 18px root — every rem-based utility scales with it */
+html {
+  font-size: 18px;
+  -webkit-text-size-adjust: 100%;
+}
+
+@media (max-width: 380px) {
+  html {
+    font-size: 16.5px;
+  }
+}
+
+body {
+  background-color: var(--color-paper);
+  color: var(--color-ink-700);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
+}
+
+/* Bangla gets a serif face — it reads far better at size for older eyes */
+:lang(bn),
+.font-bn {
+  font-family: var(--font-bn);
+  line-height: 1.85;
+}
+
+/* Never below the 48px touch target on interactive elements */
+button,
+a[role='button'],
+input,
+select {
+  min-height: 2.6rem;
+}
+
+input,
+select,
+textarea {
+  font-size: 1rem;
+}
+
+*:focus-visible {
+  outline: 3px solid var(--color-gold-400);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-fade-up {
+  animation: fade-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.03);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.animate-pop {
+  animation: pop 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+/* Faint paper texture behind hero sections */
+.paper-grain {
+  background-image: radial-gradient(circle at 1px 1px, rgba(0, 0, 0, 0.045) 1px, transparent 0);
+  background-size: 22px 22px;
+}
