@@ -7,8 +7,32 @@
 **Author:** Md Masum Billah, SSC 2010 — sole engineer, plus a non-technical volunteer committee
 **Locale:** Bangladesh — Bangla/English, bKash/Nagad, SMS + WhatsApp/IMO, low-end Android, 3G
 
+**Repository:** <https://github.com/MasumCse2k12/reunion-web>
+
 > Suggested domains: `sammalani.org` / `sammalanialumni.com` / `ssschalitatala.org`.
 > Register it before anything else and put it in the association's name, not yours (see §8, governance).
+
+---
+
+## Status — 2026-07-28
+
+**The web app exists and is deployed. The backend does not.** `web/` is a working React 19 / Vite
+front end where every screen calls `web/src/lib/api.ts`, which resolves from seeded fixtures held in
+`localStorage`. That file is the seam the Spring Boot service described below slots into: the method
+signatures already match §5, so replacing their bodies with `fetch` calls changes no component.
+
+Two decisions in the original of this document were reversed once the app was built. Both are
+corrected throughout and recorded in §10:
+
+- **There is no payment gateway, and none is planned.** Money moves offline to a batch coordinator,
+  who confirms it by hand. §6.2 is rewritten around that; the SSLCOMMERZ/webhook design it replaced
+  is gone.
+- **Admins authenticate with a username and password**, and a group admin is scoped to a range of
+  batch years. §1.3's "no passwords, ever" was always about *members*; this makes the split explicit
+  and specifies the admin side, which the app now implements.
+
+A third change is smaller but affects §8 and §11: **the scholarship fund is out of scope.** It was
+built into the demo, then removed. The reasoning is in §10.
 
 ---
 
@@ -65,14 +89,38 @@ Ambassador posts link in batch WhatsApp group
 
 The referral step is the whole product. A person will not fill in their own form, but they *will* name three friends. Make "add a classmate" a first-class action with a 2-field form (name + phone).
 
-### 1.3 No passwords. Ever.
+### 1.3 No passwords for members. Ever.
 
 Phone number + 6-digit SMS OTP. That is the entire auth story for end users. Email optional.
 - Elders cannot manage passwords, and a forgotten password is a permanently lost user.
 - Everyone already has a phone number, and it's your natural dedupe key.
 - Add "magic link" via WhatsApp/SMS for re-entry so returning users tap once.
 
-Admins get password + TOTP, separately.
+**Admins are the exception, and they are a different system.** A coordinator is not an elderly alum
+being onboarded — they are a volunteer doing repetitive review work on a laptop, several times a
+week. For them a password is the right tool, and OTP would be an obstacle.
+
+Two admin roles, no more:
+
+| Role | Sees | Can do |
+|---|---|---|
+| `SUPER_ADMIN` | All 59 batches | Everything, and is the **only** role that creates admin accounts or sets their passwords |
+| `GROUP_ADMIN` | Only the batch years assigned to them | Approve/reject members and confirm payments, for those years only |
+
+A group admin *is* the batch coordinator from §2.1 — the same volunteer, promoted from typing on
+someone's behalf to vouching for them. Scope is a range of batch years, so one person can hold
+1968–1985 and another 1986–2005.
+
+Three rules that are not negotiable:
+- **Scope is enforced server-side on every endpoint.** A group admin requesting an application
+  outside their years gets a 403, not a filtered list. Hiding it in the UI is not a control.
+- **The admin session is a distinct token from the member session.** Being signed in as a member
+  never grants admin access, and vice versa.
+- **No self-serve password reset.** A super admin sets it and tells the person directly. This is a
+  committee of a few dozen volunteers, not a consumer product; an email-reset flow is a larger
+  attack surface than the problem it solves.
+
+Add TOTP for `SUPER_ADMIN` before the platform holds real money records.
 
 ---
 
@@ -103,14 +151,23 @@ Build this on **day 2**, right after auth. It is worth more than the entire mobi
 
 ### 2.2 Minimum viable profile
 
-Required (4 fields — this is a hard ceiling, resist every request to add a fifth):
+Required (3 fields — this is a hard ceiling, resist every request to add a fourth):
 - Full name
 - Batch / SSC passing year
 - Mobile number
-- Photo *or* skip
+
+Photo is offered at claim time and skippable in one tap. It is not required, because a 70-year-old
+who cannot work out how to attach a photograph will abandon the whole flow rather than skip it.
 
 Everything else is **progressive** — asked later, one question at a time, on subsequent visits:
-nickname, section, house, present address, occupation, organization, blood group, spouse/family attending, T-shirt size, dietary preference, favourite teacher, one memory, old photographs.
+nickname, section, house, present address, occupation, organization, spouse/family attending,
+T-shirt size, dietary preference, favourite teacher, one memory, old photographs.
+
+The app currently implements this optional set: **email, gender, date of birth, blood group**,
+occupation and present address. All are optional in the API as well as the UI — an unanswered field
+stores `null`, never an empty string, so "not given" and "given as blank" stay distinguishable.
+Blood group earns its place because it is the one field with a use beyond nostalgia: an emergency at
+an event attended by several hundred people, many of them elderly.
 
 Show a profile completeness ring. People finish rings.
 
@@ -171,9 +228,10 @@ You are one engineer. One deployable Spring Boot service, internally partitioned
               └────────────┘ └───────┘ └────────────┘
                         │
               ┌─────────▼─────────────────────────┐
-              │ External: SSLCOMMERZ/bKash,        │
-              │ SMS gateway, WhatsApp Cloud API,   │
+              │ External: SMS gateway,             │
+              │ WhatsApp Cloud API,                │
               │ Anthropic API, SMTP                │
+              │ (no payment gateway — see §6.2)    │
               └────────────────────────────────────┘
 ```
 
@@ -181,16 +239,17 @@ You are one engineer. One deployable Spring Boot service, internally partitioned
 
 | Module | Responsibility |
 |---|---|
-| `identity` | Phone OTP, sessions/JWT, roles, magic links, admin auth |
+| `identity` | Phone OTP, sessions/JWT, roles, magic links, admin password auth, batch-scope checks |
 | `directory` | Person, Batch, ClassEnrollment, claim workflow, dedupe queue, search |
 | `events` | Event, ticket types, registration, guests, seating, check-in |
-| `payments` | Payment intent, gateway callbacks, reconciliation, donations, refunds |
+| `payments` | Ledger of money received offline: member-reported payments, coordinator confirmation, reconciliation export. **No gateway client, no callbacks, no refund flow.** |
+| `approvals` | The review queue: member verification and payment confirmation, scoped by batch, with a full decision history |
 | `content` | Notices, news, blog, teacher profiles, In Memoriam, committee pages |
 | `media` | Uploads, image resizing, galleries, albums, moderation |
 | `messaging` | SMS/WhatsApp/email dispatch, templates, campaigns, delivery log |
 | `ingestion` | CSV/paste import, OCR pipeline, staging + review |
 | `ai` | LLM extraction, dedupe scoring, transcription — all behind one interface |
-| `admin` | Ambassador console, moderation, exports, audit log, dashboards |
+| `admin` | Ambassador console, admin portal, admin account + password management, moderation, exports, audit log, dashboards |
 | `shared` | Auditing, outbox, idempotency, tenancy-free utils |
 
 Rule: modules talk via published interfaces or Spring application events, never by reaching into each other's repositories. Modulith's `ApplicationModules.verify()` in a test enforces it.
@@ -296,9 +355,31 @@ create table enrollment (
 
 create table app_role (
   person_id     uuid not null references person(id) on delete cascade,
-  role          text not null,        -- ALUMNI|AMBASSADOR|COMMITTEE|MODERATOR|ADMIN|SUPERADMIN
+  role          text not null,        -- ALUMNI|AMBASSADOR|COMMITTEE|MODERATOR|GROUP_ADMIN|SUPER_ADMIN
   scope         text,                 -- e.g. batch year for AMBASSADOR
   primary key (person_id, role, scope)
+);
+
+-- Password auth for admins only. Members never have a row here (§1.3).
+create table admin_credential (
+  person_id      uuid primary key references person(id) on delete cascade,
+  username       citext unique not null,
+  password_hash  text not null,          -- Argon2id. Never leaves the server.
+  totp_secret    text,                   -- required for SUPER_ADMIN
+  active         boolean not null default true,
+  must_change    boolean not null default true,   -- set by the super admin, changed on first login
+  last_login_at  timestamptz,
+  failed_attempts int not null default 0,
+  locked_until   timestamptz,
+  created_by     uuid references person(id),
+  created_at     timestamptz not null default now()
+);
+
+-- Which batch years a GROUP_ADMIN may act on. A SUPER_ADMIN has no rows and sees everything.
+create table admin_batch_scope (
+  person_id     uuid not null references person(id) on delete cascade,
+  batch_year    int not null references batch(year),
+  primary key (person_id, batch_year)
 );
 
 create table event (
@@ -327,33 +408,52 @@ create table registration (
   event_id      uuid not null references event(id),
   person_id     uuid not null references person(id),
   ticket_type_id uuid not null references ticket_type(id),
-  guests        jsonb not null default '[]',   -- [{name, relation, age, ticket_type_id}]
+  guests        jsonb not null default '[]',   -- [{name, relation, age, ticket_type_id, tshirt_size}]
   tshirt_size   text,
-  food_pref     text,
+  food_pref     text,                 -- the member's own only; not collected per guest
   amount_due    numeric(10,2) not null,
-  status        text not null default 'PENDING', -- PENDING|PAID|WAIVED|CANCELLED
-  qr_token      text unique,
+  status        text not null default 'DRAFT', -- DRAFT|SUBMITTED|APPROVED|REJECTED|CANCELLED
+  submitted_at  timestamptz,
+  qr_token      text unique,          -- issued on APPROVED, not on payment
   checked_in_at timestamptz,
   registered_by uuid references person(id),     -- ambassador who filled it
   created_at    timestamptz not null default now(),
   unique (event_id, person_id)
 );
 
+-- Money received OUTSIDE this system, recorded after the fact. There is no
+-- gateway, so there is no INITIATED state and nothing to reconcile against a
+-- provider — see §6.2.
 create table payment (
   id            uuid primary key default gen_random_uuid(),
   registration_id uuid references registration(id),
   person_id     uuid references person(id),
-  purpose       text not null,        -- TICKET|DONATION|SCHOLARSHIP_FUND
+  purpose       text not null,        -- TICKET|DONATION
   amount_bdt    numeric(10,2) not null,
-  method        text,                 -- BKASH|NAGAD|CARD|BANK|CASH
-  gateway_ref   text,
-  txn_id        text,
-  status        text not null default 'INITIATED',
-  idempotency_key text unique,
-  raw_callback  jsonb,
-  collected_by  uuid references person(id),   -- for CASH
+  method        text,                 -- BKASH|NAGAD|ROCKET|BANK|CASH
+  reference     text,                 -- TrxID, bank slip no., or receipt book no.
+  paid_to_id    uuid references person(id),   -- the coordinator the member says they paid
+  reported_at   timestamptz,                  -- when the member declared it
+  status        text not null default 'REPORTED', -- REPORTED|CONFIRMED|REJECTED
   created_at    timestamptz not null default now()
 );
+-- Two members cannot claim the same bKash transaction.
+create unique index on payment (method, reference)
+  where reference is not null and status <> 'REJECTED';
+
+-- Every human decision: "is this really a 1974 alum?" and "did this money arrive?"
+-- Append-only. A reversal is a new row, never an UPDATE.
+create table review (
+  id            uuid primary key default gen_random_uuid(),
+  subject_type  text not null,        -- PERSON_VERIFICATION|PAYMENT
+  subject_id    uuid not null,        -- person.id or payment.id
+  batch_year    int references batch(year),   -- denormalized: what scopes the decision
+  decision      text not null,        -- APPROVED|REJECTED|CONFIRMED
+  note          text,                 -- mandatory when decision = REJECTED
+  decided_by    uuid not null references person(id),
+  decided_at    timestamptz not null default now()
+);
+create index on review (subject_type, subject_id, decided_at desc);
 
 create table referral (            -- "I know this person"
   id            uuid primary key default gen_random_uuid(),
@@ -400,6 +500,9 @@ Design notes worth defending:
 - **`passed_here`** — for old batches, many students left after class 8 or transferred. They are still alumni and they will be offended if the system says otherwise.
 - **`deceased`** — for batches from the 1960s–70s this is a significant fraction. Handle it with dignity: a memorial page, never an SMS to a deceased person's number, and a family-contact field.
 - **`visibility` per contact** — the single most important privacy control. Never expose a phone number publicly by default.
+- **`review` is append-only, and `batch_year` is denormalized onto it.** Copying the year onto the decision means a coordinator's authority is checkable from the decision row alone, without joining back through a person whose batch may since have been corrected. You will need this the first time someone asks "who approved him, and were they allowed to?"
+- **`person.status` carries the verification verdict** (`CLAIMED` → `VERIFIED`), while `registration.status` carries the event submission. They are separate on purpose: someone can be a verified alum who is not coming, and the platform outlives the event. The demo app collapses both into one record for simplicity; the backend should not.
+- **`admin_credential` is a separate table, not columns on `person`.** Most people in this database will never have a password, and a nullable `password_hash` on a table of 15,000 mostly-passwordless rows invites the query that forgets to check it.
 
 ---
 
@@ -437,12 +540,17 @@ POST /referrals                { name, phone, batchYear }
 **Events**
 ```
 GET  /events                   GET /events/{slug}
-POST /events/{id}/registrations
+POST /events/{id}/registrations              → DRAFT
+PATCH /registrations/{id}                    (guests, sizes — DRAFT/REJECTED only)
+POST /registrations/{id}/submit  { note? }   → SUBMITTED, enters the review queue
 GET  /me/registrations
-POST /registrations/{id}/pay   → { gatewayRedirectUrl }
-POST /webhooks/payments/{provider}    (public, signature-verified, idempotent)
-POST /checkin                  { qrToken }   (gate volunteers)
+GET  /me/coordinators                        → who to pay: name + phone, nothing else
+POST /registrations/{id}/payment-report      { method, reference, amount, paidToId }
+GET  /checkin/... POST /checkin  { qrToken } (gate volunteers)
 ```
+There is no `/pay` endpoint and no payment webhook. `payment-report` records what the member says
+they paid; it does not assert that any money arrived. Only a coordinator's `CONFIRMED` review does
+that.
 
 **Ambassador**
 ```
@@ -455,7 +563,34 @@ POST /amb/extract              { rawText } → structured draft (AI, requires co
 GET  /amb/leaderboard
 ```
 
-**Admin**
+**Admin portal** — password session, separate token from a member session
+
+```
+POST /admin/auth/login         { username, password, totp? } → { adminToken, admin }
+POST /admin/auth/logout        GET /admin/me
+
+GET  /admin/stats                             → counts + money, scoped to caller's batches
+GET  /admin/applications       ?memberStatus=&paymentStatus=&batchYear=&q=&cursor=
+GET  /admin/applications/{id}
+POST /admin/applications/{id}/verify   { decision, note? }   APPROVED|REJECTED
+POST /admin/applications/{id}/payment  { decision, note? }   CONFIRMED|REJECTED
+```
+
+Every one of these resolves the caller's `admin_batch_scope` **server-side** and returns 403 — not
+an empty list — for a batch outside it. `note` is mandatory when `decision` is `REJECTED`; the API
+rejects a blank one, because "your registration was declined" with no reason is how you lose an alum
+permanently.
+
+**Admin accounts** — `SUPER_ADMIN` only, 403 for everyone else including other super admins' reads
+of a password
+```
+GET  /admin/accounts           POST /admin/accounts   { name, username, password, phone, role, batchYears }
+PATCH /admin/accounts/{id}     { name, phone, batchYears, active }
+POST /admin/accounts/{id}/password   { password }     → 204, never echoes the value
+DELETE /admin/accounts/{id}
+```
+
+**Admin — data operations**
 ```
 POST /admin/imports            (CSV/paste) → staging
 GET  /admin/imports/{id}/rows  PATCH row   POST /admin/imports/{id}/commit
@@ -484,16 +619,58 @@ Total: ~60 seconds, 3 taps + phone number + OTP.
 
 **Abuse guard:** the lookup list shows name+batch only. Claiming requires OTP. Rate-limit lookups per IP. If two people claim the same record, flag to committee — do not resolve it in software.
 
-### 6.2 Payment (bKash/Nagad via SSLCOMMERZ or direct)
+### 6.2 Registration approval and payment — both by hand
+
+**There is no payment gateway.** This is the largest reversal from the original design, so the
+reasoning is worth stating rather than assuming:
+
+- A gateway costs money per transaction and, more importantly, costs *trust* the committee has not
+  yet earned. Asking a 70-year-old to type a card number into a website built by "Masum, Rafiq's
+  boy" fails at a rate no UX work fixes.
+- The committee **already collects money by hand.** Every batch has a coordinator whose bKash number
+  the batch group already knows and already uses. The software's job is to make that legible, not to
+  replace it.
+- SSLCOMMERZ onboarding needs a registered legal entity. The alumni association does not exist yet
+  (§8, governance). Building the gateway integration first would block registration on paperwork.
+- Manual confirmation gives you something a gateway does not: a named human who vouched for each
+  payment. For a volunteer-run body handling other people's money, that is the accountability story.
+
+The flow:
+
 ```
-POST /registrations/{id}/pay  → create payment (INITIATED, idempotency_key)
-  → redirect to gateway
-  → user pays in bKash app
-  → gateway webhook → verify signature → verify amount → mark PAID (idempotent)
-  → outbox: SMS receipt + WhatsApp e-ticket with QR
-  → user returns to /payment/return → poll status (never trust the return URL)
+Member fills registration, adds family      → registration.status = DRAFT
+  → "Send for approval"                     → SUBMITTED, enters the coordinator's queue
+  → app shows the coordinator's name + number and the amount due
+  → member pays that person by bKash / Nagad / bank / cash — OUTSIDE the system entirely
+  → member reports it: method + TrxID       → payment.status = REPORTED
+                                              (a claim, not a fact)
+
+Coordinator opens the portal, sees only their own batch years
+  → checks the person against the batch register  → review: APPROVED | REJECTED (+ reason)
+  → checks the TrxID against their own bKash statement
+                                                  → review: CONFIRMED | REJECTED (+ reason)
+  → on APPROVED + CONFIRMED: outbox sends the SMS receipt and the e-ticket QR
 ```
-**Always** reconcile from the webhook, never the browser redirect. Store `raw_callback`. Provide a manual `CASH`/`BANK` path — a large fraction of elder alumni will hand cash to a committee member, and that must be recordable with `collected_by` for accountability.
+
+**The two decisions are independent and must stay that way.** "Is this really a 1974 alum?" and "did
+this money arrive?" fail differently and are sometimes made by different people on different days. A
+verified alum who has not paid is a normal, common state — they are still an alum.
+
+Rules the backend enforces:
+- A rejection **requires a written reason**. The member sees it, so it is also the retry instruction.
+- `(method, reference)` is unique among non-rejected payments — two members cannot claim the same
+  TrxID, which is the one fraud this design is actually exposed to.
+- Reviews are append-only. Reversing a decision writes a new row; the history stays.
+- The QR / e-ticket is issued on **APPROVED**, not on payment. Waivers and unpaid-but-attending are
+  real cases for elderly alumni and teachers, and the gate must not depend on the money.
+- Export a daily reconciliation CSV to the treasurer: person, batch, amount due, reported, confirmed,
+  confirmed-by. The coordinator's own bank statement is the source of truth; this is the cross-check.
+
+The honest cost of this decision: it does not scale past a few thousand registrations, and it puts
+real money in volunteers' personal accounts. Both are acceptable for one event run by a committee
+that already works this way. Revisit if the association incorporates and the ledger outgrows a
+spreadsheet — at which point add a gateway *alongside* this path, never instead of it, because the
+cash path never goes away.
 
 ### 6.3 Event day check-in
 QR on the e-ticket → volunteer scans with the PWA → `POST /checkin`. Offline-tolerant: cache the day's registration list in IndexedDB, queue scans, sync when the venue wifi returns (it will not be good). Also allow **search by name or phone** at the gate — half the elders will arrive with no phone, no QR, and no patience. Print a paper fallback list per batch.
@@ -554,16 +731,20 @@ The bottleneck on day 1 is not code — it's **recruiting the 59 ambassadors and
 Bulk import + dedupe queue, batch pages with the "found/missing" counter, ambassador leaderboard, profile completeness, Bangla UI, WhatsApp Cloud API onboarding.
 
 ### Month 1
-Payments (bKash/Nagad + cash recording), event + ticket types + guests, e-ticket QR, admin exports, campaign sender, media/gallery, Capacitor app store builds.
+Event + ticket types + guests, the approval queue and admin portal (§6.2), the offline payment
+ledger, e-ticket QR on approval, treasurer reconciliation export, admin exports, campaign sender,
+media/gallery, Capacitor app store builds.
+
+The admin portal is not a "later, when we have time" screen. Nothing can be approved without it, so
+it ships with the registration flow or the registration flow does not ship.
 
 ### Month 2–3 (pre-event)
 Check-in app with offline mode, seating/table assignment, souvenir data collection, volunteer scheduling, live event-day dashboard.
 
 ### Post-event → the long game
 This is the part most reunion sites fail. After the event, engagement collapses unless the platform does something ongoing:
-- **School noticeboard** — the current school actually uses it (results, notices, admission info)
+- **School noticeboard** — the current school actually uses it (results, notices, admission info). With the scholarship fund dropped, this is now the primary answer to "why would anyone open this in 2029?", so treat it as the retention feature rather than a nice-to-have.
 - **Teacher directory + In Memoriam** — the emotional core, and it never goes stale
-- **Scholarship fund** — recurring donations, transparent ledger, recipient stories. This is the single strongest reason a 1974 alum returns monthly.
 - **Job/mentorship board** — young alumni find seniors; seniors love being asked
 - **Batch sub-groups** with their own pages, photos, and mini-reunions
 - **Annual data refresh** — one SMS a year: "is this still your number?"
@@ -573,28 +754,44 @@ This is the part most reunion sites fail. After the event, engagement collapses 
 
 ## 9. Repository layout
 
+**What exists today** — <https://github.com/MasumCse2k12/reunion-web>
+
 ```
-reunion/
+reunion-web/
+├── README.md                       # setup + demo credentials
+├── Jenkinsfile                     # ci → build → deploy to Vercel → smoke test
 ├── docs/
-│   ├── 00-SYSTEM-DESIGN.md
-│   ├── 01-adr/                     # architecture decision records
-│   ├── 02-runbook.md
+│   ├── 00-SYSTEM-DESIGN.md         # this file
 │   └── 03-TECH-STACK.md
-├── api/                            # Spring Boot
+└── web/                            # React 19 + Vite 8 + Tailwind 4, deployed on Vercel
+    ├── src/lib/api.ts              # ← the seam: every screen calls this and nothing else
+    ├── src/lib/adminStore.tsx      # admin session, deliberately separate from the member one
+    ├── src/mock/data.ts            # seeded fixtures — deleted when the backend lands
+    └── src/pages/                  # Landing, Login, Signup, Dashboard, Guests, Batches, Profile
+        └── admin/                  # Login, Overview, ReviewQueue, Members, Payments, Accounts
+```
+
+Note the front end is **Vite + React, not the Next.js of §3.3.** For a client-rendered app behind a
+CDN, with no SEO requirement past the landing page and no server-side rendering in use, Next.js was
+weight without payoff. §3.3's argument for a PWA plus Capacitor still holds; only the framework
+changed. Revisit if server-side rendering of public batch pages ever matters for search.
+
+**What it grows into** once the backend starts — one repository, two deployables:
+
+```
+reunion-web/
+├── api/                            # Spring Boot (not yet started)
 │   ├── src/main/java/org/sammalani/alumni/
 │   │   ├── AlumniApplication.java
-│   │   ├── identity/  directory/  events/  payments/
+│   │   ├── identity/  directory/  events/  payments/  approvals/
 │   │   ├── content/   media/      messaging/
 │   │   ├── ingestion/ ai/         admin/     shared/
 │   │   └── config/
 │   └── src/main/resources/db/migration/   # Flyway V1__init.sql ...
-├── web/                            # Next.js PWA
-│   ├── app/(public)/ (auth)/ (member)/ (ambassador)/ (admin)/
-│   ├── components/  lib/  messages/{bn,en}.json
-│   └── capacitor.config.ts
+├── web/                            # as above
 ├── ops/
-│   ├── docker-compose.yml  Caddyfile  backup.sh
-└── .github/workflows/ci.yml
+│   └── docker-compose.yml  Caddyfile  backup.sh
+└── Jenkinsfile                     # gains an api build + deploy stage
 ```
 
 ---
@@ -605,7 +802,12 @@ reunion/
 |---|---|---|
 | Microservices? | No — modular monolith | One engineer, 20-year horizon, trivial load |
 | Native apps? | PWA + Capacitor wrap | One codebase; store presence without a second stack |
-| Passwords? | No, phone OTP only | Elders cannot manage passwords |
+| Front-end framework? | Vite + React, not Next.js | No SSR in use; Next.js was weight without payoff |
+| Passwords for members? | No, phone OTP only | Elders cannot manage passwords |
+| Passwords for admins? | Yes, set by a super admin | A coordinator reviewing 40 records on a laptop is not an elder being onboarded. No self-serve reset — the committee is a few dozen people. |
+| Payment gateway? | **No, and not planned** | Costs trust the committee hasn't earned, needs a legal entity that doesn't exist yet, and the coordinators already collect by hand. Manual confirmation also gives a named human per payment. |
+| Scholarship fund? | **Dropped from scope** | It was the strongest retention argument, but it needs a registered association, an audited ledger and a disbursement policy — none of which exist. Shipping a donations UI on top of a personal bKash number would be worse than shipping nothing. Revisit after incorporation; the noticeboard carries retention until then. |
+| Verify members before the event? | Yes, by their batch coordinator | The roster is OCR'd from 50-year-old handwriting. Somebody who knows the batch has to look. |
 | Search engine? | Postgres `pg_trgm` + FTS | ~15k rows; Elasticsearch is pure overhead |
 | Message broker? | Transactional outbox table | Same reason |
 | Start from empty DB? | No — pre-seed the roster | Claim beats create, by a wide margin |
@@ -622,10 +824,12 @@ reunion/
 | **Old batches never register** — the defining risk | Ambassador programme, staffed and started before launch. Track 1968–1985 coverage as *the* KPI. |
 | Bad/duplicate data floods in | Staging + review for every import; merge queue; phone-verified as the trust signal |
 | SMS costs run away | Spend cap, per-phone throttle, prefer WhatsApp where available, dry-run cost estimate on campaigns |
-| Payment disputes | Immutable payment log, `raw_callback`, `collected_by` on cash, daily reconciliation export to the treasurer |
-| Committee scope creep | The 4-field cap on required profile fields; a written "not in v1" list |
-| Bus factor = you | 2+ admins, credentials in a shared vault, runbook, boring stack a volunteer can maintain |
-| Platform dies after 2027 | Fund the scholarship ledger and school noticeboard — utility, not nostalgia, is what sustains it |
+| **Money sits in volunteers' personal accounts** — the cost of having no gateway | Append-only `review` log naming who confirmed what; unique `(method, reference)` so a TrxID can't be claimed twice; daily reconciliation export to the treasurer, checked against the coordinator's own statement; more than one person with portal access per batch |
+| Approval queue becomes the bottleneck on registration day | Track decision latency as a KPI (§12); a super admin can act on any batch; alert a coordinator whose queue exceeds a day |
+| A coordinator approves outside their batch, or approves themselves | Scope resolved server-side and enforced with 403 on every endpoint; every decision audited with the batch year on the row; a second person reviews the coordinators' own registrations |
+| Committee scope creep | The 3-field cap on required profile fields; a written "not in v1" list |
+| Bus factor = you | 2+ super admins, credentials in a shared vault, runbook, boring stack a volunteer can maintain |
+| Platform dies after 2027 | The school noticeboard and teacher directory — utility, not nostalgia, is what sustains it. With the scholarship fund out of scope this is the whole retention story, so it cannot be deferred indefinitely. |
 
 ---
 
@@ -637,6 +841,13 @@ Track from day 1 — a public counter on the landing page is itself a growth mec
 - Claim conversion: invite sent → claimed
 - Referrals per registered alum (target > 1.5)
 - Ambassador activity: calls logged, conversions
+- **Median time from submission to a coordinator's decision** (target < 24h). Approval is now on the
+  critical path to a confirmed seat, so a slow queue is indistinguishable from a broken site to the
+  person waiting. Break it out per coordinator — it is how you find the volunteer who has quietly
+  stopped.
+- **Rejection rate, and the reasons.** A rising rate means the seeded roster is wrong, not that
+  people are lying.
+- Reported-vs-confirmed payment gap, and its age — money the committee thinks it has but hasn't verified
 - Median time-to-complete registration (target < 90s)
 - Profile completeness distribution
 - Post-event 90-day return rate — the honest test of whether you built a platform or a form

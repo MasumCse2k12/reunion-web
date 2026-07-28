@@ -67,8 +67,8 @@ Most "Java 25 features" lists are irrelevant to a CRUD service. These four are n
 
 ### 3.1 Virtual threads — the whole reason this scales on one small box
 
-Your workload is ~100% I/O wait: Postgres, SMS gateway, bKash, WhatsApp, S3. Platform threads
-would have you sizing a pool and tuning it. Virtual threads make that a non-problem.
+Your workload is ~100% I/O wait: Postgres, SMS gateway, WhatsApp, S3, the Anthropic API. Platform
+threads would have you sizing a pool and tuning it. Virtual threads make that a non-problem.
 
 ```yaml
 spring:
