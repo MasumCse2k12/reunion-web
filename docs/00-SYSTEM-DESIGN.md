@@ -574,12 +574,26 @@ GET  /admin/applications       ?memberStatus=&paymentStatus=&batchYear=&q=&curso
 GET  /admin/applications/{id}
 POST /admin/applications/{id}/verify   { decision, note? }   APPROVED|REJECTED
 POST /admin/applications/{id}/payment  { decision, note? }   CONFIRMED|REJECTED
+
+POST /admin/applications/verify        { ids[], decision, note? }  → { updated[], skipped[] }
+POST /admin/applications/payment       { ids[], decision, note? }  → { updated[], skipped[] }
 ```
 
 Every one of these resolves the caller's `admin_batch_scope` **server-side** and returns 403 — not
 an empty list — for a batch outside it. `note` is mandatory when `decision` is `REJECTED`; the API
 rejects a blank one, because "your registration was declined" with no reason is how you lose an alum
-permanently.
+permanently. On the bulk routes the one note is copied onto every row, which is why the same rule
+holds there.
+
+**The bulk routes are deliberately partial, not transactional.** A coordinator ticking forty rows
+after a batch WhatsApp drive should not lose thirty-nine sound decisions because one row moved out of
+their scope while they were reading. Each id is decided independently; anything refused comes back in
+`skipped[]` as `{ id, name, reason }` and the portal names it on screen. The three reasons are: the
+application no longer exists, the batch is outside the caller's scope, and — for
+`decision=CONFIRMED` — the member has not reported a payment yet, so there is nothing to confirm.
+Every decided row still writes its own append-only `review` record, so a bulk approval is
+indistinguishable from forty single ones in the audit trail. That is the point: `review` stays the
+one place that answers "who approved him, and were they allowed to?"
 
 **Admin accounts** — `SUPER_ADMIN` only, 403 for everyone else including other super admins' reads
 of a password

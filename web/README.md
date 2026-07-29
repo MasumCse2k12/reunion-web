@@ -42,9 +42,20 @@ own session — an admin session is never a member session and vice versa.
 |---|---|---|
 | `/admin/login` | Sign in | Username + password. The demo prints the seeded credentials and fills them on tap. |
 | `/admin` | Overview | Pending verifications, payments to confirm, approved / rejected counts, confirmed vs outstanding money — all scoped to the batches this admin owns |
-| `/admin/members` | **Member verification** | The queue. Filter by batch and status, search by name / mobile / batch, open a member to see every detail they gave, then approve or reject with a note (a reason is required to reject). |
-| `/admin/payments` | **Payment confirmation** | Same queue, keyed on what the member reported paying. Confirm or reject by hand. |
+| `/admin/members` | **Member verification** | The queue. Filter by batch and status, search by name / mobile / batch, open a member to see every detail they gave, then approve or reject with a note (a reason is required to reject). Rows can also be ticked and decided in bulk — see below. |
+| `/admin/payments` | **Payment confirmation** | Same queue, keyed on what the member reported paying. Confirm or reject by hand, one at a time or in bulk. |
 | `/admin/accounts` | Admin accounts | **Super admin only.** Create group admins, assign them a batch range, set their password, disable or remove them. |
+
+**One at a time, or many.** Both queues carry a checkbox per row and a select-all for the current
+filter. Tick some and a bar appears at the bottom with **Approve/Confirm selected** and **Reject
+selected**; either opens a confirmation listing who is about to be decided, with one note that is
+written onto every one of them. A reason is still required to reject — forty people getting
+"declined" with no explanation is worse than one, not better.
+
+The bulk call is partial, not all-or-nothing: each row is decided on its own, and anything it
+refuses comes back named with the reason, shown as a summary above the queue. A payment cannot be
+confirmed for someone who has not reported one yet, so those rows are counted in the confirmation
+sheet before you commit and listed as skipped afterwards.
 
 **Two roles.** A **super admin** sees all 59 batches and is the only one who can create admin
 accounts or set passwords. A **group admin** is a batch coordinator: they see and act on only the

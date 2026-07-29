@@ -1,19 +1,37 @@
-import { useCallback, useEffect, useState } from 'react'
-import { Check, Clock, Search, Users2, Wallet, X } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { AlertTriangle, Check, Clock, Search, Users2, Wallet, X } from 'lucide-react'
 import {
   adminApi,
   ApiError,
   type Application,
+  type BulkReviewResult,
   type PaymentStatus,
   type ReviewStatus,
 } from '../../lib/api'
-import { useApp, type TKey } from '../../lib/store'
-import { Avatar, Badge, Button, Card, Field, Input, SectionTitle, Select, Sheet, Spinner, cx } from '../../components/ui'
+import { useApp, type Lang, type TKey } from '../../lib/store'
+import {
+  Avatar,
+  Badge,
+  Button,
+  Card,
+  Checkbox,
+  Field,
+  Input,
+  SectionTitle,
+  Select,
+  Sheet,
+  Spinner,
+  cx,
+} from '../../components/ui'
 
 type Mode = 'MEMBER' | 'PAYMENT'
+type Verdict = 'APPROVE' | 'REJECT'
 
 const MEMBER_STATUSES: (ReviewStatus | 'ALL')[] = ['PENDING', 'APPROVED', 'REJECTED', 'ALL']
 const PAYMENT_STATUSES: (PaymentStatus | 'ALL')[] = ['REPORTED', 'UNPAID', 'CONFIRMED', 'REJECTED', 'ALL']
+
+/** How many names the bulk confirmation lists before it stops and counts the rest. */
+const NAME_PREVIEW = 8
 
 const MEMBER_LABEL: Record<ReviewStatus, TKey> = {
   PENDING: 'dash.awaitingReview',
@@ -50,6 +68,17 @@ export default function ReviewQueue({ mode }: { mode: Mode }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
+  /* ---- bulk selection ---- */
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [bulk, setBulk] = useState<Verdict | null>(null)
+  const [bulkNote, setBulkNote] = useState('')
+  const [bulkBusy, setBulkBusy] = useState(false)
+  const [bulkError, setBulkError] = useState('')
+  const [result, setResult] = useState<BulkReviewResult | null>(null)
+
+  /** "5 selected" in English, "৫টি নির্বাচিত" in Bangla — the space differs. */
+  const withCount = (v: number, k: TKey) => (lang === 'bn' ? `${n(v)}${t(k)}` : `${n(v)} ${t(k)}`)
+
   useEffect(() => {
     adminApi.myBatches().then(setBatches)
   }, [])
@@ -67,10 +96,31 @@ export default function ReviewQueue({ mode }: { mode: Mode }) {
 
   useEffect(() => {
     setApps(null)
+    // A tick that is no longer on screen must not be acted on later.
+    setSelected(new Set())
+    // The last outcome described the previous filter's rows, not these.
+    setResult(null)
     load()
   }, [load])
 
-  async function decide(verdict: 'APPROVE' | 'REJECT') {
+  const selectedApps = useMemo(() => apps?.filter((a) => selected.has(a.id)) ?? [], [apps, selected])
+
+  /** Payment rows with nothing reported yet cannot be confirmed — warn before, not after. */
+  const unpayable = mode === 'PAYMENT' ? selectedApps.filter((a) => !a.payment).length : 0
+
+  function toggle(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (!next.delete(id)) next.add(id)
+      return next
+    })
+  }
+
+  function toggleAll(on: boolean) {
+    setSelected(on ? new Set((apps ?? []).map((a) => a.id)) : new Set())
+  }
+
+  async function decide(verdict: Verdict) {
     if (!open) return
     setError('')
     setBusy(true)
@@ -91,6 +141,27 @@ export default function ReviewQueue({ mode }: { mode: Mode }) {
     }
   }
 
+  async function decideMany(verdict: Verdict) {
+    const ids = [...selected]
+    setBulkError('')
+    setBulkBusy(true)
+    try {
+      const outcome =
+        mode === 'MEMBER'
+          ? await adminApi.reviewMembersBulk(ids, verdict === 'APPROVE' ? 'APPROVED' : 'REJECTED', bulkNote)
+          : await adminApi.reviewPaymentsBulk(ids, verdict === 'APPROVE' ? 'CONFIRMED' : 'REJECTED', bulkNote)
+      setBulk(null)
+      setBulkNote('')
+      setSelected(new Set())
+      setResult(outcome)
+      load()
+    } catch (e) {
+      setBulkError(e instanceof ApiError ? (lang === 'bn' ? e.messageBn : e.message) : 'Error')
+    } finally {
+      setBulkBusy(false)
+    }
+  }
+
   const statuses: string[] = mode === 'MEMBER' ? MEMBER_STATUSES : PAYMENT_STATUSES
   const statusLabel = (s: string): string =>
     s === 'ALL'
@@ -98,6 +169,10 @@ export default function ReviewQueue({ mode }: { mode: Mode }) {
       : mode === 'MEMBER'
         ? t(MEMBER_LABEL[s as ReviewStatus])
         : t(PAYMENT_LABEL[s as PaymentStatus])
+
+  const approveLabel = mode === 'MEMBER' ? t('cta.approve') : t('cta.confirm')
+  const bulkApproveLabel = mode === 'MEMBER' ? t('admin.approveSelected') : t('admin.confirmSelected')
+  const allSelected = !!apps && apps.length > 0 && selected.size === apps.length
 
   return (
     <div className="space-y-5">
@@ -140,6 +215,9 @@ export default function ReviewQueue({ mode }: { mode: Mode }) {
         </Field>
       </Card>
 
+      {/* ---------- Outcome of the last bulk decision ---------- */}
+      {result && <BulkSummary result={result} onClose={() => setResult(null)} withCount={withCount} lang={lang} />}
+
       {/* ---------- Queue ---------- */}
       {!apps ? (
         <Spinner label={t('common.loading')} />
@@ -150,46 +228,195 @@ export default function ReviewQueue({ mode }: { mode: Mode }) {
         </Card>
       ) : (
         <div className="space-y-2">
-          {apps.map((a) => (
-            <Card key={a.id} className="flex flex-wrap items-center gap-3 p-3">
-              <Avatar name={a.name} />
-              <div className="min-w-0 flex-1">
-                <div className="truncate font-bold text-ink-900">{lang === 'bn' ? a.nameBn : a.name}</div>
-                <div className="truncate text-sm text-ink-400">
-                  {lang === 'bn' ? 'এসএসসি' : 'SSC'} {yr(a.batchYear)} · <span className="tabular-nums">{n(a.phone)}</span>
-                  {a.guests.length > 0 && (
-                    <>
-                      {' '}
-                      · <Users2 className="inline size-3.5" /> {n(a.guests.length)}
-                    </>
-                  )}
+          {/* Select-all header — the only way to act on a whole filtered page at once */}
+          <div className="flex items-center gap-1 px-1">
+            <Checkbox
+              checked={allSelected}
+              indeterminate={selected.size > 0 && !allSelected}
+              onChange={toggleAll}
+              label={t('admin.selectAll')}
+            />
+            <button
+              type="button"
+              onClick={() => toggleAll(!allSelected)}
+              className="font-semibold text-ink-500 hover:text-ink-700"
+            >
+              {t('admin.selectAll')} ({n(apps.length)})
+            </button>
+          </div>
+
+          {apps.map((a) => {
+            const picked = selected.has(a.id)
+            return (
+              <Card
+                key={a.id}
+                className={cx(
+                  'flex flex-wrap items-center gap-1.5 p-3 transition',
+                  picked && 'border-brand-300 bg-brand-50/60 ring-1 ring-brand-200',
+                )}
+              >
+                <Checkbox checked={picked} onChange={() => toggle(a.id)} label={t('admin.selectRow')} />
+                <Avatar name={a.name} />
+                <div className="ml-1.5 min-w-0 flex-1">
+                  <div className="truncate font-bold text-ink-900">{lang === 'bn' ? a.nameBn : a.name}</div>
+                  <div className="truncate text-sm text-ink-400">
+                    {lang === 'bn' ? 'এসএসসি' : 'SSC'} {yr(a.batchYear)} ·{' '}
+                    <span className="tabular-nums">{n(a.phone)}</span>
+                    {a.guests.length > 0 && (
+                      <>
+                        {' '}
+                        · <Users2 className="inline size-3.5" /> {n(a.guests.length)}
+                      </>
+                    )}
+                  </div>
+                  <div className="mt-1 flex flex-wrap gap-1.5">
+                    <Badge tone={memberTone(a.memberStatus)}>{t(MEMBER_LABEL[a.memberStatus])}</Badge>
+                    <Badge tone={paymentTone(a.paymentStatus)}>
+                      <Wallet className="size-3.5" />
+                      {t(PAYMENT_LABEL[a.paymentStatus])}
+                    </Badge>
+                  </div>
                 </div>
-                <div className="mt-1 flex flex-wrap gap-1.5">
-                  <Badge tone={memberTone(a.memberStatus)}>{t(MEMBER_LABEL[a.memberStatus])}</Badge>
-                  <Badge tone={paymentTone(a.paymentStatus)}>
-                    <Wallet className="size-3.5" />
-                    {t(PAYMENT_LABEL[a.paymentStatus])}
-                  </Badge>
+                <div className="flex shrink-0 items-center gap-2">
+                  <span className="font-extrabold tabular-nums text-ink-900">{money(a.amountDue)}</span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setOpen(a)
+                      setNote('')
+                      setError('')
+                    }}
+                  >
+                    {t('admin.details')}
+                  </Button>
                 </div>
-              </div>
-              <div className="flex shrink-0 items-center gap-2">
-                <span className="font-extrabold tabular-nums text-ink-900">{money(a.amountDue)}</span>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    setOpen(a)
-                    setNote('')
-                    setError('')
-                  }}
-                >
-                  {t('admin.details')}
-                </Button>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            )
+          })}
         </div>
       )}
+
+      {/* ---------- Bulk action bar ---------- */}
+      {selected.size > 0 && (
+        <>
+          {/* Spacer so the fixed bar never covers the last row */}
+          <div className="h-24" aria-hidden />
+          <div className="fixed inset-x-0 bottom-0 z-40 border-t border-paper-2 bg-white/95 p-3 shadow-[0_-4px_16px_rgba(0,0,0,0.06)] backdrop-blur">
+            <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-2">
+              <span className="font-extrabold text-ink-900">{withCount(selected.size, 'admin.selectedCount')}</span>
+              <button
+                type="button"
+                onClick={() => setSelected(new Set())}
+                className="font-semibold text-ink-400 underline hover:text-ink-700"
+              >
+                {t('admin.clearSelection')}
+              </button>
+              <div className="ml-auto flex gap-2">
+                <Button
+                  variant="danger"
+                  icon={<X className="size-5" />}
+                  onClick={() => {
+                    setBulk('REJECT')
+                    setBulkNote('')
+                    setBulkError('')
+                  }}
+                >
+                  {t('admin.rejectSelected')}
+                </Button>
+                <Button
+                  icon={<Check className="size-5" />}
+                  onClick={() => {
+                    setBulk('APPROVE')
+                    setBulkNote('')
+                    setBulkError('')
+                  }}
+                >
+                  {bulkApproveLabel}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ---------- Bulk confirmation ---------- */}
+      <Sheet
+        open={!!bulk}
+        onClose={() => setBulk(null)}
+        title={
+          bulk === 'REJECT'
+            ? t('admin.bulkRejectTitle')
+            : mode === 'MEMBER'
+              ? t('admin.bulkApproveTitle')
+              : t('admin.bulkConfirmTitle')
+        }
+      >
+        {bulk && (
+          <div className="space-y-4">
+            <p className="font-semibold text-ink-700">{withCount(selectedApps.length, 'admin.selectedCount')}</p>
+
+            <Card className="max-h-56 space-y-1 overflow-y-auto p-4">
+              {selectedApps.slice(0, NAME_PREVIEW).map((a) => (
+                <div key={a.id} className="flex items-baseline justify-between gap-3">
+                  <span className="min-w-0 truncate font-semibold text-ink-700">
+                    {lang === 'bn' ? a.nameBn : a.name}
+                  </span>
+                  <span className="shrink-0 text-sm text-ink-400">{yr(a.batchYear)}</span>
+                </div>
+              ))}
+              {selectedApps.length > NAME_PREVIEW && (
+                <p className="pt-1 text-sm text-ink-400">
+                  + {withCount(selectedApps.length - NAME_PREVIEW, 'admin.andMore')}
+                </p>
+              )}
+            </Card>
+
+            {bulk === 'APPROVE' && unpayable > 0 && (
+              <Card className="flex gap-2.5 border-gold-200 bg-gold-50 p-4">
+                <AlertTriangle className="mt-0.5 size-5 shrink-0 text-gold-700" />
+                <p className="text-sm font-semibold text-ink-700">{withCount(unpayable, 'admin.bulkWarnUnpaid')}</p>
+              </Card>
+            )}
+
+            <Field label={t('admin.reviewNote')} hint={t('admin.bulkNoteHint')} error={bulkError}>
+              <textarea
+                rows={2}
+                value={bulkNote}
+                onChange={(e) => setBulkNote(e.target.value)}
+                placeholder={t('admin.rejectReason')}
+                className="w-full rounded-xl border-2 border-paper-2 bg-white px-4 py-3 text-ink-900 placeholder:text-ink-400 focus:border-brand-400 focus:outline-none"
+              />
+            </Field>
+
+            <div className="grid grid-cols-2 gap-2">
+              <Button variant="outline" size="lg" onClick={() => setBulk(null)}>
+                {t('cta.cancel')}
+              </Button>
+              {bulk === 'REJECT' ? (
+                <Button
+                  variant="danger"
+                  size="lg"
+                  loading={bulkBusy}
+                  icon={<X className="size-5" />}
+                  onClick={() => decideMany('REJECT')}
+                >
+                  {t('cta.reject')}
+                </Button>
+              ) : (
+                <Button
+                  size="lg"
+                  loading={bulkBusy}
+                  icon={<Check className="size-5" />}
+                  onClick={() => decideMany('APPROVE')}
+                >
+                  {approveLabel}
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
+      </Sheet>
 
       {/* ---------- Detail + decision ---------- */}
       <Sheet open={!!open} onClose={() => setOpen(null)} title={t('admin.details')}>
@@ -283,7 +510,7 @@ export default function ReviewQueue({ mode }: { mode: Mode }) {
             )}
 
             {/* ---- Decision ---- */}
-            <Field label={mode === 'MEMBER' ? t('admin.reviewNote') : t('admin.reviewNote')} error={error}>
+            <Field label={t('admin.reviewNote')} error={error}>
               <textarea
                 rows={2}
                 value={note}
@@ -304,13 +531,62 @@ export default function ReviewQueue({ mode }: { mode: Mode }) {
                 icon={<Check className="size-5" />}
                 onClick={() => decide('APPROVE')}
               >
-                {mode === 'MEMBER' ? t('cta.approve') : t('cta.confirm')}
+                {approveLabel}
               </Button>
             </div>
           </div>
         )}
       </Sheet>
     </div>
+  )
+}
+
+/** What the bulk decision actually did — including, by name, what it refused to do. */
+function BulkSummary({
+  result,
+  onClose,
+  withCount,
+  lang,
+}: {
+  result: BulkReviewResult
+  onClose: () => void
+  withCount: (v: number, k: TKey) => string
+  lang: Lang
+}) {
+  const clean = result.skipped.length === 0
+  return (
+    <Card
+      className={cx('flex gap-3 p-4', clean ? 'border-brand-200 bg-brand-50' : 'border-gold-200 bg-gold-50')}
+      as="section"
+    >
+      {clean ? (
+        <Check className="mt-0.5 size-5 shrink-0 text-brand-700" />
+      ) : (
+        <AlertTriangle className="mt-0.5 size-5 shrink-0 text-gold-700" />
+      )}
+      <div className="min-w-0 flex-1">
+        <p className={cx('font-bold', clean ? 'text-brand-700' : 'text-gold-700')}>
+          {withCount(result.updated.length, 'admin.bulkDone')}
+          {!clean && ` · ${withCount(result.skipped.length, 'admin.bulkSkipped')}`}
+        </p>
+        {result.skipped.length > 0 && (
+          <ul className="mt-1.5 space-y-0.5 text-sm text-ink-700">
+            {result.skipped.map((s) => (
+              <li key={s.id}>
+                <span className="font-semibold">{s.name}</span> — {lang === 'bn' ? s.reasonBn : s.reason}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+      <button
+        onClick={onClose}
+        aria-label="Close"
+        className="grid size-8 shrink-0 place-items-center rounded-full text-ink-500 hover:bg-white/60"
+      >
+        <X className="size-5" />
+      </button>
+    </Card>
   )
 }
 

@@ -514,6 +514,74 @@ export type ApplicationFilter = {
   query?: string
 }
 
+/**
+ * The outcome of a bulk decision. Deliberately partial rather than all-or-nothing:
+ * a coordinator who ticks forty rows and hits Confirm should not lose thirty-nine
+ * good decisions because one row slipped out of their batch scope in the meantime.
+ * Anything that could not be decided comes back named, so the UI can say why.
+ */
+export type BulkReviewResult = {
+  updated: Application[]
+  skipped: { id: string; name: string; reason: string; reasonBn: string }[]
+}
+
+/** A rejection always needs a reason — the member is told what to fix. */
+function requireReason(isRejection: boolean, note?: string) {
+  if (isRejection && !note?.trim()) {
+    throw new ApiError('Write a reason before rejecting.', 'বাতিল করার আগে কারণ লিখুন।')
+  }
+}
+
+function requireSelection(ids: string[]) {
+  if (ids.length === 0) {
+    throw new ApiError('Select at least one application.', 'অন্তত একটি আবেদন নির্বাচন করুন।')
+  }
+}
+
+function stamp(admin: AdminUser, note?: string) {
+  return { adminId: admin.id, adminName: admin.name, at: new Date().toISOString(), note: note?.trim() || undefined }
+}
+
+/**
+ * Resolve one id for the given admin, or explain why it cannot be decided.
+ * The single-item and bulk paths both go through here, so the scope check and the
+ * "no payment reported yet" guard cannot drift apart between them.
+ */
+function resolveForDecision(
+  admin: AdminUser,
+  id: string,
+  guard?: (app: Application) => { reason: string; reasonBn: string } | null,
+): { app: Application } | { skip: BulkReviewResult['skipped'][number] } {
+  const app = store.applications.find((a) => a.id === id)
+  if (!app) {
+    return { skip: { id, name: id, reason: 'Application not found', reasonBn: 'আবেদনটি পাওয়া যায়নি' } }
+  }
+  if (!adminCoversBatch(admin, app.batchYear)) {
+    return {
+      skip: {
+        id,
+        name: app.name,
+        reason: 'This batch is outside your assignment.',
+        reasonBn: 'এই ব্যাচটি আপনার দায়িত্বের বাইরে।',
+      },
+    }
+  }
+  const blocked = guard?.(app)
+  if (blocked) return { skip: { id, name: app.name, ...blocked } }
+  return { app }
+}
+
+/** A payment cannot be confirmed before the member has reported one. */
+function paymentReportedGuard(verdict: 'CONFIRMED' | 'REJECTED') {
+  return (app: Application) =>
+    verdict === 'CONFIRMED' && !app.payment
+      ? {
+          reason: 'The member has not reported a payment yet.',
+          reasonBn: 'সদস্য এখনো পেমেন্টের তথ্য দেননি।',
+        }
+      : null
+}
+
 export const adminApi = {
   /* ---------------- session ---------------- */
 
@@ -592,16 +660,13 @@ export const adminApi = {
 
   async reviewMember(applicationId: string, verdict: 'APPROVED' | 'REJECTED', note?: string): Promise<Application> {
     const admin = currentAdmin()
-    const app = store.applications.find((a) => a.id === applicationId)
-    if (!app) throw new ApiError('Application not found', 'আবেদনটি পাওয়া যায়নি')
-    if (!adminCoversBatch(admin, app.batchYear)) {
-      throw new ApiError('This batch is outside your assignment.', 'এই ব্যাচটি আপনার দায়িত্বের বাইরে।')
-    }
-    if (verdict === 'REJECTED' && !note?.trim()) {
-      throw new ApiError('Write a reason before rejecting.', 'বাতিল করার আগে কারণ লিখুন।')
-    }
+    requireReason(verdict === 'REJECTED', note)
+    const found = resolveForDecision(admin, applicationId)
+    if ('skip' in found) throw new ApiError(found.skip.reason, found.skip.reasonBn)
+
+    const app = found.app
     app.memberStatus = verdict
-    app.memberReview = { adminId: admin.id, adminName: admin.name, at: new Date().toISOString(), note: note?.trim() || undefined }
+    app.memberReview = stamp(admin, note)
     syncOwnRegistration(app)
     save(store)
     return delay(app)
@@ -609,18 +674,73 @@ export const adminApi = {
 
   async reviewPayment(applicationId: string, verdict: 'CONFIRMED' | 'REJECTED', note?: string): Promise<Application> {
     const admin = currentAdmin()
-    const app = store.applications.find((a) => a.id === applicationId)
-    if (!app) throw new ApiError('Application not found', 'আবেদনটি পাওয়া যায়নি')
-    if (!adminCoversBatch(admin, app.batchYear)) {
-      throw new ApiError('This batch is outside your assignment.', 'এই ব্যাচটি আপনার দায়িত্বের বাইরে।')
-    }
-    if (verdict === 'REJECTED' && !note?.trim()) {
-      throw new ApiError('Write a reason before rejecting.', 'বাতিল করার আগে কারণ লিখুন।')
-    }
+    requireReason(verdict === 'REJECTED', note)
+    const found = resolveForDecision(admin, applicationId, paymentReportedGuard(verdict))
+    if ('skip' in found) throw new ApiError(found.skip.reason, found.skip.reasonBn)
+
+    const app = found.app
     app.paymentStatus = verdict
-    app.paymentReview = { adminId: admin.id, adminName: admin.name, at: new Date().toISOString(), note: note?.trim() || undefined }
+    app.paymentReview = stamp(admin, note)
     save(store)
     return delay(app)
+  },
+
+  /* ---------------- bulk decisions ----------------
+   *
+   * One decision, one note, many applications. The note is written onto every
+   * row, which is why a bulk rejection demands a reason exactly as a single one
+   * does: "not on the 1996 register" has to reach each member individually.
+   */
+
+  async reviewMembersBulk(
+    applicationIds: string[],
+    verdict: 'APPROVED' | 'REJECTED',
+    note?: string,
+  ): Promise<BulkReviewResult> {
+    const admin = currentAdmin()
+    requireSelection(applicationIds)
+    requireReason(verdict === 'REJECTED', note)
+
+    const result: BulkReviewResult = { updated: [], skipped: [] }
+    for (const id of applicationIds) {
+      const found = resolveForDecision(admin, id)
+      if ('skip' in found) {
+        result.skipped.push(found.skip)
+        continue
+      }
+      const app = found.app
+      app.memberStatus = verdict
+      app.memberReview = stamp(admin, note)
+      syncOwnRegistration(app)
+      result.updated.push(app)
+    }
+    save(store)
+    return delay(result)
+  },
+
+  async reviewPaymentsBulk(
+    applicationIds: string[],
+    verdict: 'CONFIRMED' | 'REJECTED',
+    note?: string,
+  ): Promise<BulkReviewResult> {
+    const admin = currentAdmin()
+    requireSelection(applicationIds)
+    requireReason(verdict === 'REJECTED', note)
+
+    const result: BulkReviewResult = { updated: [], skipped: [] }
+    for (const id of applicationIds) {
+      const found = resolveForDecision(admin, id, paymentReportedGuard(verdict))
+      if ('skip' in found) {
+        result.skipped.push(found.skip)
+        continue
+      }
+      const app = found.app
+      app.paymentStatus = verdict
+      app.paymentReview = stamp(admin, note)
+      result.updated.push(app)
+    }
+    save(store)
+    return delay(result)
   },
 
   /* ---------------- admin accounts (super admin only) ---------------- */

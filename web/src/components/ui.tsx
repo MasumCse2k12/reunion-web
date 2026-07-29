@@ -1,5 +1,5 @@
 import { type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from 'react'
-import { Loader2, X } from 'lucide-react'
+import { Check, Loader2, Minus, X } from 'lucide-react'
 
 export function cx(...parts: (string | false | null | undefined)[]) {
   return parts.filter(Boolean).join(' ')
@@ -85,6 +85,48 @@ const fieldBase =
 
 export function Input({ className, ...rest }: InputHTMLAttributes<HTMLInputElement>) {
   return <input className={cx(fieldBase, className)} {...rest} />
+}
+
+/**
+ * A checkbox drawn as a button rather than a styled `<input>`. The tap target is
+ * the full 44px square Apple and Android both ask for — these get tapped by
+ * volunteers on phones, working down a list of forty rows.
+ * `indeterminate` renders the "some, not all" dash for a select-all header.
+ */
+export function Checkbox({
+  checked,
+  indeterminate,
+  onChange,
+  label,
+  className,
+}: {
+  checked: boolean
+  indeterminate?: boolean
+  onChange: (next: boolean) => void
+  /** Accessible name. Rendered visibly when given as a string in a label slot. */
+  label: string
+  className?: string
+}) {
+  const on = checked || indeterminate
+  return (
+    <button
+      type="button"
+      role="checkbox"
+      aria-checked={indeterminate ? 'mixed' : checked}
+      aria-label={label}
+      onClick={() => onChange(!checked)}
+      className={cx('grid size-11 shrink-0 place-items-center rounded-xl hover:bg-paper-2', className)}
+    >
+      <span
+        className={cx(
+          'grid size-6 place-items-center rounded-md border-2 transition',
+          on ? 'border-brand-600 bg-brand-600 text-white' : 'border-ink-400/50 bg-white',
+        )}
+      >
+        {indeterminate ? <Minus className="size-4" /> : checked ? <Check className="size-4" /> : null}
+      </span>
+    </button>
+  )
 }
 
 export function Select({ className, children, ...rest }: SelectHTMLAttributes<HTMLSelectElement>) {
