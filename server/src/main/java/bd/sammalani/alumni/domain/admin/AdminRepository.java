@@ -11,18 +11,25 @@ import org.springframework.data.repository.query.Param;
 
 public interface AdminRepository extends JpaRepository<AdminCredential, UUID> {
 
-    @EntityGraph(attributePaths = "person")
+    /*
+     * Every graph below names "batches" explicitly. A Spring Data @EntityGraph
+     * has FETCH semantics: anything it does not list becomes lazy regardless of
+     * the mapping, so listing only "person" would quietly undo the EAGER on the
+     * batch scope and blow up outside the transaction.
+     */
+
+    @EntityGraph(attributePaths = {"person", "batches"})
     @Query("select a from AdminCredential a where lower(a.username) = lower(:username)")
     Optional<AdminCredential> findByUsernameIgnoringCase(@Param("username") String username);
 
     @Query("select count(a) > 0 from AdminCredential a where lower(a.username) = lower(:username)")
     boolean existsByUsernameIgnoringCase(@Param("username") String username);
 
-    @EntityGraph(attributePaths = "person")
+    @EntityGraph(attributePaths = {"person", "batches"})
     @Query("select a from AdminCredential a order by a.createdAt")
     List<AdminCredential> findAllWithPerson();
 
-    @EntityGraph(attributePaths = "person")
+    @EntityGraph(attributePaths = {"person", "batches"})
     Optional<AdminCredential> findWithPersonByPersonId(UUID personId);
 
     /**
