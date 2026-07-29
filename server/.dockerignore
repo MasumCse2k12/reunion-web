@@ -1,0 +1,15 @@
+# Everything the build stage produces for itself. Copying a host build/ in would
+# both bloat the context and risk baking a stale jar into the image.
+build/
+.gradle/
+.gradle-home/
+
+# Secrets and noise — the image gets its configuration from the environment.
+.env
+*.log
+
+# Not needed to compile.
+Dockerfile
+.dockerignore
+docker-compose.yml
+README.md

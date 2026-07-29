@@ -34,10 +34,17 @@ access control.
 ```
 .
 ├── Jenkinsfile          # build → deploy → smoke test. Setup guide is in its header comment.
+├── docker-compose.yml   # the whole stack on one machine: postgres, redis, api, web
+├── .env.example         # what that stack needs from you — copy to .env
 ├── docs/
 │   ├── 00-SYSTEM-DESIGN.md   # architecture, data model, REST contract, rollout
 │   └── 03-TECH-STACK.md      # stack choices and why
+├── server/              # the API — Spring Boot 4 · Java 25 · Postgres · Redis
+│   ├── Dockerfile            # multi-stage: Gradle build → JRE runtime, non-root
+│   └── docker-compose.yml    # postgres + redis only, for running the API from your IDE
 └── web/                 # the app — React 19 · Vite 8 · TypeScript · Tailwind 4
+    ├── Dockerfile            # multi-stage: npm build → nginx
+    ├── nginx.conf            # SPA fallback and cache headers for that image
     ├── src/lib/api.ts        # ← the swap point: all fake data enters here
     ├── src/mock/data.ts      # seeded fixtures — delete when the backend lands
     └── README.md             # the detailed guide: screens, demo script, hosting, backend swap
@@ -111,6 +118,44 @@ State lives in `localStorage`. The yellow demo banner has a **Reset demo** butto
 
 ---
 
+## Running it with Docker
+
+Nothing above needs Docker — the web app is a static bundle and runs on Node alone. Use this when
+you want the API and its Postgres and Redis alongside it, or when you are putting the platform on a
+VPS rather than on Vercel.
+
+```bash
+cp .env.example .env        # then set JWT_SECRET — the API refuses to start without one
+docker compose up --build
+```
+
+| | |
+|---|---|
+| Web | <http://localhost:8080> |
+| API | <http://localhost:8090> — Swagger UI at `/swagger-ui.html` |
+
+Postgres and Redis are deliberately **not** published to the host here; nothing outside the compose
+network needs them. Data survives `docker compose down` in the `pgdata` volume, and `down -v`
+deletes it.
+
+Either image builds on its own, without compose:
+
+```bash
+docker build -t sammalani/alumni-web ./web     # ~63 MB, nginx serving dist/
+docker build -t sammalani/alumni-api ./server  # Gradle build inside, JRE out
+```
+
+Both are multi-stage, so no toolchain ships in the runtime layer: the web image has no Node and the
+API image has no Gradle and no JDK. Neither needs anything installed on the host but Docker — not
+Node 22, not a JDK 25. The API image runs as an unprivileged user and its `HEALTHCHECK` asks
+Actuator's readiness probe, which only answers once Flyway has migrated and the pool is up, so
+`depends_on` in compose waits on something real.
+
+The web app is still fixture-backed, so the `web` container does not yet call the `api` one. They
+are in the same file because that changes; see [`web/README.md` §7](web/README.md).
+
+---
+
 ## Seeing the whole loop
 
 The point of the product is the handoff between a member and their coordinator. Two tabs shows it:
@@ -136,8 +181,15 @@ npx vercel --prod
 ```
 
 **Continuously**, via the `Jenkinsfile` at this root: it checks out this repository, runs
-`npm ci` → `typecheck` → `build`, deploys to Vercel, then smoke-tests the deployed URL and fails the
-build on anything but a 200. `main` goes to production; every other branch gets a preview URL.
+`npm ci` → `typecheck` → `build`, builds both container images and checks the web one actually
+serves, deploys to Vercel, then smoke-tests the deployed URL and fails the build on anything but a
+200. `main` goes to production; every other branch gets a preview URL.
+
+Vercel does not use those images — the image stage is there so the Dockerfiles cannot rot between
+the days you actually deploy them, and so there is something to push the day you move off Vercel.
+Set `DOCKER_REGISTRY` in the `Jenkinsfile` and add a `docker-registry` credential and `main` starts
+pushing; leave it empty and the images are built, verified and left on the agent. `SKIP_IMAGES`
+turns the stage off.
 
 Setup — plugins, the single Vercel credential, both job types, the GitHub webhook, and what to do
 when the agent has no Docker — is written out in the comment header of

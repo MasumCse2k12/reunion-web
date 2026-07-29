@@ -1,0 +1,83 @@
+# The whole platform on one machine: Postgres, Redis, the API and the web app.
+#
+#   cp .env.example .env      # then fill in JWT_SECRET
+#   docker compose up --build
+#
+#   web   http://localhost:8080
+#   api   http://localhost:8090   (Swagger UI at /swagger-ui.html)
+#
+# For day-to-day backend work you usually want the other file — server/docker-compose.yml
+# runs only Postgres and Redis, and you run the service from your IDE against them.
+
+name: sammalani-alumni
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: alumni
+      POSTGRES_USER: alumni
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-alumni}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    # Not published. Nothing outside this network has business reaching the
+    # database; server/docker-compose.yml is the stack that exposes a port.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U alumni -d alumni"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    # Cache and OTP store only — nothing here is worth an fsync, and losing it
+    # costs a user one resend.
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ./server
+    image: sammalani/alumni-api:local
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/alumni
+      DB_USER: alumni
+      DB_PASSWORD: ${DB_PASSWORD:-alumni}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      # No default, deliberately — an unset secret must stop the stack, not sign
+      # tokens with a value published in a compose file.
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env — see .env.example}
+      BOOTSTRAP_ADMIN_USERNAME: ${BOOTSTRAP_ADMIN_USERNAME:-superadmin}
+      BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:-}
+      BOOTSTRAP_ADMIN_PHONE: ${BOOTSTRAP_ADMIN_PHONE:-}
+      OTP_DEV_CODE: ${OTP_DEV_CODE:-}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "${API_PORT:-8090}:8090"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./web
+    image: sammalani/alumni-web:local
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    # No depends_on: the app still resolves everything from src/lib/api.ts and
+    # localStorage, so it does not yet call the API. Add one when it does.
+    restart: unless-stopped
+
+volumes:
+  pgdata:

@@ -185,12 +185,36 @@ Free tier includes unlimited bandwidth and a free `*.pages.dev` subdomain.
 
 The repository root has a `Jenkinsfile` that checks out
 [`MasumCse2k12/reunion-web`](https://github.com/MasumCse2k12/reunion-web), runs
-`npm ci` → `typecheck` → `build`, deploys to Vercel, then smoke-tests the deployed URL and fails the
-build on anything but a 200. `main` deploys to production; any other branch gets a preview URL.
+`npm ci` → `typecheck` → `build`, builds the container images from Option E and checks that the web
+one serves, deploys to Vercel, then smoke-tests the deployed URL and fails the build on anything but
+a 200. `main` deploys to production; any other branch gets a preview URL.
 
 Full setup — plugins, the one credential, both job types, webhooks, and what to do when the agent
 has no Docker — is written out in the comment header of that file. Read it there rather than here,
 so the instructions cannot drift from the pipeline they describe.
+
+### Option E — Docker, on any machine you control
+
+The three hosts above build this app from source themselves and need no image. Use this one when
+the target is a VPS, a colleague's laptop, or a CI job — anywhere you want the built app to run with
+nothing installed but Docker.
+
+```bash
+docker build -t sammalani/alumni-web ./web    # from the repository root
+docker run --rm -p 8080:80 sammalani/alumni-web
+```
+
+Two stages: `node:22-alpine` runs `npm ci`, `typecheck` and `build`, then only `dist/` is copied
+into `nginx:1.31-alpine`. The result is ~63 MB and contains no Node and no source. `nginx.conf`
+does what `vercel.json` and `_redirects` do on their platforms — falls every route back to
+`index.html` — and adds a `/healthz` endpoint plus the cache headers those hosts set for you:
+a year on the fingerprinted files under `/assets/`, `no-store` on `index.html`.
+
+The typecheck runs inside the image on purpose. `vite build` strips types without checking them, so
+without it a broken build would produce a perfectly serveable image.
+
+To bring up the API and its database alongside it, use the `docker-compose.yml` at the repository
+root instead — see the root [`README.md`](../README.md#running-it-with-docker).
 
 ### SPA routing
 
@@ -309,7 +333,8 @@ web/
 │       ├── …                   # Landing, Login, Signup, Dashboard, Guests, Batches, BatchDetail, Profile
 │       └── admin/              # AdminLogin, AdminLayout, AdminOverview, ReviewQueue, AdminMembers,
 │                               # AdminPayments, AdminAccounts
-├── netlify.toml  vercel.json
+├── netlify.toml  vercel.json   # SPA rewrites for those two hosts
+├── Dockerfile  nginx.conf      # the same rewrite, for the image (§5 Option E)
 └── package.json
 ```
 

@@ -1,0 +1,21 @@
+# Installed inside the image from the lockfile — a host copy is the wrong
+# platform as often as not.
+node_modules/
+
+# Built inside the image; a host dist/ would be copied in and then overwritten.
+dist/
+
+# Secrets. .env.local holds a Vercel OIDC token.
+.env
+.env.*
+
+# Deploy-platform state and local noise.
+.vercel
+.netlify
+.claude
+*.log
+
+# Not needed to build.
+Dockerfile
+.dockerignore
+README.md
