@@ -15,7 +15,8 @@ export default function AdminOverview() {
 
   useEffect(() => {
     adminApi.stats().then(setStats)
-    adminApi.applications({ memberStatus: 'PENDING' }).then((list) => setRecent(list.slice(0, 6)))
+    // Ask for the six it shows, rather than every pending row in scope.
+    adminApi.applications({ memberStatus: 'PENDING', limit: 6 }).then((page) => setRecent(page.items))
   }, [])
 
   if (!stats || !admin) return <Spinner label={t('common.loading')} />

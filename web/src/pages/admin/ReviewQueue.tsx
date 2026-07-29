@@ -3,6 +3,7 @@ import { AlertTriangle, Check, Clock, Search, Users2, Wallet, X } from 'lucide-r
 import {
   adminApi,
   ApiError,
+  PAGE_SIZE,
   type Application,
   type BulkReviewResult,
   type PaymentStatus,
@@ -58,6 +59,9 @@ export default function ReviewQueue({ mode }: { mode: Mode }) {
   const { t, lang, n, yr, money } = useApp()
 
   const [apps, setApps] = useState<Application[] | null>(null)
+  const [nextCursor, setNextCursor] = useState<string | null>(null)
+  const [total, setTotal] = useState(0)
+  const [more, setMore] = useState(false)
   const [batches, setBatches] = useState<number[]>([])
   const [query, setQuery] = useState('')
   const [batchYear, setBatchYear] = useState<'ALL' | number>('ALL')
@@ -83,16 +87,34 @@ export default function ReviewQueue({ mode }: { mode: Mode }) {
     adminApi.myBatches().then(setBatches)
   }, [])
 
-  const load = useCallback(async () => {
-    const list = await adminApi.applications({
-      query,
-      batchYear,
-      ...(mode === 'MEMBER'
-        ? { memberStatus: status as ReviewStatus | 'ALL' }
-        : { paymentStatus: status as PaymentStatus | 'ALL' }),
-    })
-    setApps(list)
-  }, [mode, query, batchYear, status])
+  const fetchPage = useCallback(
+    (cursor: string | null, limit?: number) =>
+      adminApi.applications({
+        query,
+        batchYear,
+        cursor,
+        limit,
+        ...(mode === 'MEMBER'
+          ? { memberStatus: status as ReviewStatus | 'ALL' }
+          : { paymentStatus: status as PaymentStatus | 'ALL' }),
+      }),
+    [mode, query, batchYear, status],
+  )
+
+  /**
+   * Load from the top. `keep` re-requests as many rows as the admin had already
+   * pulled in, so acting on a row twelve pages down does not throw them back to
+   * the first page.
+   */
+  const load = useCallback(
+    async (keep?: number) => {
+      const page = await fetchPage(null, keep)
+      setApps(page.items)
+      setNextCursor(page.nextCursor)
+      setTotal(page.total)
+    },
+    [fetchPage],
+  )
 
   useEffect(() => {
     setApps(null)
@@ -102,6 +124,19 @@ export default function ReviewQueue({ mode }: { mode: Mode }) {
     setResult(null)
     load()
   }, [load])
+
+  async function loadMore() {
+    if (!nextCursor || more) return
+    setMore(true)
+    try {
+      const page = await fetchPage(nextCursor)
+      setApps((prev) => [...(prev ?? []), ...page.items])
+      setNextCursor(page.nextCursor)
+      setTotal(page.total)
+    } finally {
+      setMore(false)
+    }
+  }
 
   const selectedApps = useMemo(() => apps?.filter((a) => selected.has(a.id)) ?? [], [apps, selected])
 
@@ -120,6 +155,9 @@ export default function ReviewQueue({ mode }: { mode: Mode }) {
     setSelected(on ? new Set((apps ?? []).map((a) => a.id)) : new Set())
   }
 
+  /** How many rows to pull back after a decision — never fewer than one page. */
+  const openWindow = () => Math.max(PAGE_SIZE, apps?.length ?? 0)
+
   async function decide(verdict: Verdict) {
     if (!open) return
     setError('')
@@ -133,7 +171,7 @@ export default function ReviewQueue({ mode }: { mode: Mode }) {
       setNote('')
       // Reload rather than patch in place — the row usually leaves the current filter.
       setApps((prev) => prev?.map((a) => (a.id === updated.id ? updated : a)) ?? null)
-      load()
+      load(openWindow())
     } catch (e) {
       setError(e instanceof ApiError ? (lang === 'bn' ? e.messageBn : e.message) : 'Error')
     } finally {
@@ -154,7 +192,7 @@ export default function ReviewQueue({ mode }: { mode: Mode }) {
       setBulkNote('')
       setSelected(new Set())
       setResult(outcome)
-      load()
+      load(openWindow())
     } catch (e) {
       setBulkError(e instanceof ApiError ? (lang === 'bn' ? e.messageBn : e.message) : 'Error')
     } finally {
@@ -173,6 +211,9 @@ export default function ReviewQueue({ mode }: { mode: Mode }) {
   const approveLabel = mode === 'MEMBER' ? t('cta.approve') : t('cta.confirm')
   const bulkApproveLabel = mode === 'MEMBER' ? t('admin.approveSelected') : t('admin.confirmSelected')
   const allSelected = !!apps && apps.length > 0 && selected.size === apps.length
+  const hasMore = !!nextCursor
+  // "Select all" only tells the truth when everything matching is already on screen.
+  const selectAllLabel = hasMore ? t('admin.selectLoaded') : t('admin.selectAll')
 
   return (
     <div className="space-y-5">
@@ -228,20 +269,23 @@ export default function ReviewQueue({ mode }: { mode: Mode }) {
         </Card>
       ) : (
         <div className="space-y-2">
-          {/* Select-all header — the only way to act on a whole filtered page at once */}
+          {/* Select-all header. It ticks the rows that are actually on screen — never
+              the unloaded remainder, which nobody has read. The label says so, and the
+              count next to it is loaded-of-total. */}
           <div className="flex items-center gap-1 px-1">
             <Checkbox
               checked={allSelected}
               indeterminate={selected.size > 0 && !allSelected}
               onChange={toggleAll}
-              label={t('admin.selectAll')}
+              label={selectAllLabel}
             />
             <button
               type="button"
               onClick={() => toggleAll(!allSelected)}
               className="font-semibold text-ink-500 hover:text-ink-700"
             >
-              {t('admin.selectAll')} ({n(apps.length)})
+              {selectAllLabel} ({n(apps.length)}
+              {hasMore && ` / ${n(total)}`})
             </button>
           </div>
 
@@ -294,6 +338,16 @@ export default function ReviewQueue({ mode }: { mode: Mode }) {
               </Card>
             )
           })}
+
+          {/* Load more, rather than numbered pages: this queue is worked top to
+              bottom on a phone, and a page number is a place you have to keep. */}
+          {hasMore && (
+            <div className="pt-2 text-center">
+              <Button variant="outline" size="lg" loading={more} onClick={loadMore}>
+                {t('cta.loadMore')} ({n(total - apps.length)})
+              </Button>
+            </div>
+          )}
         </div>
       )}
 

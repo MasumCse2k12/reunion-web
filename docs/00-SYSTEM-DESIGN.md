@@ -570,7 +570,8 @@ POST /admin/auth/login         { username, password, totp? } → { adminToken, a
 POST /admin/auth/logout        GET /admin/me
 
 GET  /admin/stats                             → counts + money, scoped to caller's batches
-GET  /admin/applications       ?memberStatus=&paymentStatus=&batchYear=&q=&cursor=
+GET  /admin/applications       ?memberStatus=&paymentStatus=&batchYear=&q=&cursor=&limit=
+                               → { items[], nextCursor, total }
 GET  /admin/applications/{id}
 POST /admin/applications/{id}/verify   { decision, note? }   APPROVED|REJECTED
 POST /admin/applications/{id}/payment  { decision, note? }   CONFIRMED|REJECTED
@@ -584,6 +585,17 @@ an empty list — for a batch outside it. `note` is mandatory when `decision` is
 rejects a blank one, because "your registration was declined" with no reason is how you lose an alum
 permanently. On the bulk routes the one note is copied onto every row, which is why the same rule
 holds there.
+
+**The queue is paged, and the cursor is opaque to the client.** The portal asks for a page, gets
+`nextCursor` back, and hands that string in unread — so the mock's offset encoding can become a
+keyset on `(submitted_at, id)` in the real service without a screen changing. Use the keyset: a
+coordinator scrolls slowly, other coordinators are deciding rows underneath them, and offset paging
+would quietly skip an applicant every time a row above them left the filter. `total` is returned
+alongside so the UI can say "10 / 143" rather than implying that ten is all there is.
+
+That number is also why **select-all covers the loaded rows only**, and says "Select all shown" while
+anything remains unloaded. A control that silently swept 143 unread applications into one Approve
+would be the single most dangerous button in the product.
 
 **The bulk routes are deliberately partial, not transactional.** A coordinator ticking forty rows
 after a batch WhatsApp drive should not lose thirty-nine sound decisions because one row moved out of

@@ -512,6 +512,38 @@ export type ApplicationFilter = {
   paymentStatus?: PaymentStatus | 'ALL'
   batchYear?: number | 'ALL'
   query?: string
+  /** Opaque — hand back exactly what the previous page returned as `nextCursor`. */
+  cursor?: string | null
+  limit?: number
+}
+
+/**
+ * One page of results. `nextCursor` is null on the last page.
+ *
+ * The cursor is deliberately opaque to callers. This mock encodes an offset into
+ * it, which is fine against an array that only this tab can mutate; the real
+ * service should encode a keyset (`submitted_at`, `id`) instead, so that rows
+ * decided by another coordinator mid-scroll cannot shift the window and hide
+ * someone. Because no screen parses the string, that swap changes nothing here.
+ */
+export type Page<T> = {
+  items: T[]
+  nextCursor: string | null
+  /** Total matching the filter, not the page — the UI shows "20 / 143". */
+  total: number
+}
+
+/**
+ * Rows per page when the caller does not ask for a specific `limit`. Ten, not
+ * fifty: these are tall cards being read one at a time on a phone, and a
+ * coordinator who has to scroll past forty of them to reach the button has
+ * already lost their place.
+ */
+export const PAGE_SIZE = 10
+
+function decodeCursor(cursor: string | null | undefined): number {
+  const m = /^off:(\d+)$/.exec(cursor ?? '')
+  return m ? Number(m[1]) : 0
 }
 
 /**
@@ -634,10 +666,10 @@ export const adminApi = {
     })
   },
 
-  async applications(filter: ApplicationFilter = {}): Promise<Application[]> {
+  async applications(filter: ApplicationFilter = {}): Promise<Page<Application>> {
     const admin = currentAdmin()
     const q = filter.query?.trim().toLowerCase() ?? ''
-    const list = visibleTo(admin).filter((a) => {
+    const matched = visibleTo(admin).filter((a) => {
       if (filter.memberStatus && filter.memberStatus !== 'ALL' && a.memberStatus !== filter.memberStatus) return false
       if (filter.paymentStatus && filter.paymentStatus !== 'ALL' && a.paymentStatus !== filter.paymentStatus) return false
       if (filter.batchYear && filter.batchYear !== 'ALL' && a.batchYear !== filter.batchYear) return false
@@ -647,7 +679,15 @@ export const adminApi = {
       }
       return true
     })
-    return delay(list)
+
+    const start = decodeCursor(filter.cursor)
+    const limit = Math.max(1, filter.limit ?? PAGE_SIZE)
+    const end = start + limit
+    return delay({
+      items: matched.slice(start, end),
+      nextCursor: end < matched.length ? `off:${end}` : null,
+      total: matched.length,
+    })
   },
 
   /** Batch years this admin may act on, for filter dropdowns. */

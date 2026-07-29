@@ -46,11 +46,17 @@ own session — an admin session is never a member session and vice versa.
 | `/admin/payments` | **Payment confirmation** | Same queue, keyed on what the member reported paying. Confirm or reject by hand, one at a time or in bulk. |
 | `/admin/accounts` | Admin accounts | **Super admin only.** Create group admins, assign them a batch range, set their password, disable or remove them. |
 
-**One at a time, or many.** Both queues carry a checkbox per row and a select-all for the current
-filter. Tick some and a bar appears at the bottom with **Approve/Confirm selected** and **Reject
-selected**; either opens a confirmation listing who is about to be decided, with one note that is
-written onto every one of them. A reason is still required to reject — forty people getting
-"declined" with no explanation is worse than one, not better.
+**One at a time, or many.** Both queues carry a checkbox per row and a select-all header. Tick some
+and a bar appears at the bottom with **Approve/Confirm selected** and **Reject selected**; either
+opens a confirmation listing who is about to be decided, with one note that is written onto every one
+of them. A reason is still required to reject — forty people getting "declined" with no explanation
+is worse than one, not better.
+
+**Ten rows at a time**, with a **Load more** button carrying the remaining count and a `10 / 143`
+readout by the select-all. Selection survives loading further rows, and a decision reloads the window
+you had open rather than snapping you back to the top. Select-all deliberately ticks **only the rows
+on screen** — it reads "Select all shown" while anything is still unloaded, because a button that
+swept up applications nobody had read would be the worst button here.
 
 The bulk call is partial, not all-or-nothing: each row is decided on its own, and anything it
 refuses comes back named with the reason, shown as a summary above the queue. A payment cannot be
