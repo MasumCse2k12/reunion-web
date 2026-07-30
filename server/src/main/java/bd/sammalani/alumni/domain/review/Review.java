@@ -3,6 +3,7 @@ package bd.sammalani.alumni.domain.review;
 import java.time.Instant;
 import java.util.UUID;
 
+import bd.sammalani.alumni.common.audit.AuditBatchScoped;
 import bd.sammalani.alumni.domain.person.Person;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -36,7 +37,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-public class Review {
+public class Review implements AuditBatchScoped {
 
     @Id
     @GeneratedValue
@@ -59,7 +60,9 @@ public class Review {
     /** Mandatory when the decision is REJECTED — enforced here, in the service, and by a CHECK. */
     private String note;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    // EAGER because Person is soft-deleted; see the note on Person. The queue read
+    // in findLatestForSubjects join-fetches it, so a page is still one query.
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "decided_by", nullable = false)
     private Person decidedBy;
 
@@ -77,5 +80,10 @@ public class Review {
         review.decidedBy = decidedBy;
         review.decidedAt = Instant.now();
         return review;
+    }
+
+    @Override
+    public Integer auditBatchYear() {
+        return batchYear;
     }
 }

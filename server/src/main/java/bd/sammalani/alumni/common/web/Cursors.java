@@ -28,10 +28,21 @@ public final class Cursors {
     }
 
     public static String encode(Instant submittedAt, UUID id) {
-        if (submittedAt == null || id == null) {
-            return null;
-        }
-        long micros = submittedAt.getEpochSecond() * 1_000_000L + submittedAt.getNano() / 1_000L;
+        return submittedAt == null || id == null ? null : encode(submittedAt, id.toString());
+    }
+
+    /**
+     * The same cursor over a {@code bigserial} key, for the audit trail — the one
+     * table whose sort key is {@code (at, id)} with a long rather than a uuid.
+     * Same encoding, same opacity contract, so a client cannot tell the difference
+     * and does not have to.
+     */
+    public static String encodeSeq(Instant at, Long id) {
+        return at == null || id == null ? null : encode(at, id.toString());
+    }
+
+    private static String encode(Instant at, String id) {
+        long micros = at.getEpochSecond() * 1_000_000L + at.getNano() / 1_000L;
         String raw = micros + SEPARATOR + id;
         return Base64.getUrlEncoder().withoutPadding()
                 .encodeToString(raw.getBytes(StandardCharsets.UTF_8));
@@ -39,6 +50,15 @@ public final class Cursors {
 
     /** Never throws for malformed input — returns {@code null}, meaning the first page. */
     public static Position decode(String cursor) {
+        return decode(cursor, (at, id) -> new Position(at, UUID.fromString(id)));
+    }
+
+    /** Never throws for malformed input — returns {@code null}, meaning the first page. */
+    public static SeqPosition decodeSeq(String cursor) {
+        return decode(cursor, (at, id) -> new SeqPosition(at, Long.parseLong(id)));
+    }
+
+    private static <P> P decode(String cursor, java.util.function.BiFunction<Instant, String, P> build) {
         if (cursor == null || cursor.isBlank()) {
             return null;
         }
@@ -49,10 +69,9 @@ public final class Cursors {
                 return null;
             }
             long micros = Long.parseLong(raw.substring(0, separator));
-            UUID id = UUID.fromString(raw.substring(separator + 1));
             Instant at = Instant.ofEpochSecond(Math.floorDiv(micros, 1_000_000L),
                     Math.floorMod(micros, 1_000_000L) * 1_000L);
-            return new Position(at, id);
+            return build.apply(at, raw.substring(separator + 1));
         } catch (IllegalArgumentException | IndexOutOfBoundsException e) {
             return null;
         }
@@ -71,5 +90,9 @@ public final class Cursors {
     }
 
     public record Position(Instant submittedAt, UUID id) {
+    }
+
+    /** A keyset position on a {@code bigserial} key. */
+    public record SeqPosition(Instant at, long id) {
     }
 }

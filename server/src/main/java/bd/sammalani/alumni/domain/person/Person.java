@@ -6,8 +6,11 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.SoftDelete;
+import org.hibernate.annotations.SoftDeleteType;
 import org.hibernate.type.SqlTypes;
 
+import bd.sammalani.alumni.common.audit.AuditBatchScoped;
 import bd.sammalani.alumni.common.jpa.Auditable;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -27,13 +30,34 @@ import lombok.Setter;
  * volunteer, or they are teachers, or they have died. Authentication attaches to
  * a person; it does not define one. That is why there is no password column
  * (see {@code AdminCredential}) and why {@code phone} is nullable.
+ * <p>
+ * Never deleted. A removal sets {@code deleted_at} and Hibernate adds
+ * {@code deleted_at is null} to every query that touches this table, including
+ * the joins from {@code registration} and {@code review}. Which means the "right
+ * to be removed" in §7 of the design doc is one call to {@code delete} rather
+ * than an audit of every read in the codebase — and it is reversible, which
+ * matters because the people asking to be removed are the same people who will
+ * ask to come back once their batch group starts posting photographs.
+ * <p>
+ * <strong>Every to-one pointing here is EAGER, and not by preference.</strong>
+ * Hibernate refuses to map a lazy {@code @ManyToOne} or {@code @OneToOne} to a
+ * soft-deleted entity, and it is right to: a proxy is built from the foreign key
+ * alone, so it cannot know the row it stands for is tombstoned, and the first
+ * getter call would have to either resurrect a deleted person or throw from
+ * somewhere far away from the query that asked. The same applies to
+ * {@code Registration} and any other entity that gains {@code @SoftDelete}. The
+ * cost is small here because every read path that walks one of these already
+ * fetches it — see the entity graphs on the repositories and the explicit
+ * {@code fetch} in {@code ApplicationQueryRepositoryImpl}. Add the join when you
+ * add the query; do not go back to LAZY, it will not start the application.
  */
 @Entity
 @Table(name = "person")
+@SoftDelete(strategy = SoftDeleteType.TIMESTAMP, columnName = "deleted_at")
 @Getter
 @Setter
 @NoArgsConstructor
-public class Person extends Auditable {
+public class Person extends Auditable implements AuditBatchScoped {
 
     @Id
     @GeneratedValue
@@ -90,5 +114,10 @@ public class Person extends Auditable {
 
     public String displayName() {
         return nameBn != null && !nameBn.isBlank() ? nameBn : name;
+    }
+
+    @Override
+    public Integer auditBatchYear() {
+        return batchYear;
     }
 }

@@ -41,8 +41,10 @@ public class AdminCredential extends Auditable {
     @Column(name = "person_id")
     private UUID personId;
 
+    // EAGER because Person is soft-deleted; see the note on Person. Sharing the
+    // primary key means this is the same row lookup either way.
     @MapsId
-    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @OneToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "person_id")
     private Person person;
 

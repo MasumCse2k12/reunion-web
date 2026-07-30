@@ -63,4 +63,50 @@ class CursorsTest {
         assertThat(Cursors.clampLimit(5_000, 10, 100)).isEqualTo(100);
         assertThatThrownBy(() -> Cursors.clampLimit(0, 10, 100)).isInstanceOf(ApiException.class);
     }
+
+    /* ---------------- the audit trail's bigserial variant ---------------- */
+
+    @Test
+    @DisplayName("a sequence cursor round-trips to the exact instant and id it encoded")
+    void seqRoundTrips() {
+        Instant at = Instant.parse("2027-02-12T09:30:15.123456Z");
+
+        Cursors.SeqPosition decoded = Cursors.decodeSeq(Cursors.encodeSeq(at, 4_391_022L));
+
+        assertThat(decoded).isNotNull();
+        assertThat(decoded.at()).isEqualTo(at);
+        assertThat(decoded.id()).isEqualTo(4_391_022L);
+    }
+
+    @Test
+    @DisplayName("a junk sequence cursor starts from the top, as the uuid one does")
+    void seqJunkIsHarmless() {
+        assertThat(Cursors.decodeSeq(null)).isNull();
+        assertThat(Cursors.decodeSeq("not-base64!!")).isNull();
+        // "123456:not-a-number" — a uuid cursor handed to the audit trail
+        assertThat(Cursors.decodeSeq("MTIzNDU2Om5vdC1hLW51bWJlcg")).isNull();
+    }
+
+    @Test
+    @DisplayName("nothing to encode means no next page")
+    void seqNullsEncodeToNull() {
+        assertThat(Cursors.encodeSeq(null, 1L)).isNull();
+        assertThat(Cursors.encodeSeq(Instant.now(), null)).isNull();
+    }
+
+    /**
+     * The two encodings share a format, so a cursor from one page type decodes
+     * shapefully in the other. It must still be refused rather than misread: a
+     * uuid is not a sequence number and pretending otherwise would silently return
+     * the wrong page.
+     */
+    @Test
+    @DisplayName("a uuid cursor is not mistaken for a sequence cursor, or the reverse")
+    void theTwoCursorTypesDoNotCrossOver() {
+        String uuidCursor = Cursors.encode(Instant.now(), UUID.randomUUID());
+        String seqCursor = Cursors.encodeSeq(Instant.now(), 42L);
+
+        assertThat(Cursors.decodeSeq(uuidCursor)).isNull();
+        assertThat(Cursors.decode(seqCursor)).isNull();
+    }
 }

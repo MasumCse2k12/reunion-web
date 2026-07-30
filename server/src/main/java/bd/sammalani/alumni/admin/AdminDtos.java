@@ -7,6 +7,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+import java.util.Map;
+
+import bd.sammalani.alumni.common.audit.ActorKind;
+import bd.sammalani.alumni.common.audit.AuditAction;
 import bd.sammalani.alumni.domain.admin.AdminRole;
 import bd.sammalani.alumni.domain.payment.PaymentStatus;
 import bd.sammalani.alumni.domain.person.Gender;
@@ -156,5 +160,57 @@ public final class AdminDtos {
     }
 
     public record SetPasswordRequest(@NotBlank @Size(min = 10, max = 100) String password) {
+    }
+
+    /* ---------------- the audit trail ---------------- */
+
+    @Schema(description = "One recorded write. `changes` holds only the fields that changed, as {field: {from, to}}.")
+    public record AuditEntryDto(
+            long id,
+            Instant at,
+            AuditAction action,
+            @Schema(description = "The table the row lives in, e.g. `registration`.")
+            String entity,
+            String entityId,
+            Integer batchYear,
+            UUID actorId,
+            ActorKind actorKind,
+            @Schema(description = "Who they were at the time of the write, not who they are now.")
+            String actorLabel,
+            String note,
+            Map<String, Map<String, String>> changes,
+            String requestId,
+            String ip,
+            String method,
+            String path) {
+    }
+
+    /**
+     * A page of the trail, and deliberately without a total.
+     * <p>
+     * Every other paged response in this API carries one, because a coordinator
+     * needs to know that ten of a hundred and forty-three applications are on
+     * screen. This is the exception: the trail is the one table that grows without
+     * bound, a {@code count(*)} over it is a full scan, and nobody has ever needed
+     * to be told that there are 4.3 million audit rows.
+     */
+    @Schema(description = "One page of the audit trail, newest first. No total: see AuditPage.")
+    public record AuditPage(List<AuditEntryDto> items, String nextCursor) {
+    }
+
+    @Schema(description = "A soft-deleted row, with who removed it and why, taken from the audit trail.")
+    public record TombstoneDto(
+            UUID id,
+            @Schema(description = "person | registration | payment | notice | referral")
+            String kind,
+            @Schema(description = "A name where the table has one, so the row is recognisable.")
+            String label,
+            Integer batchYear,
+            Instant deletedAt,
+            String deletedBy,
+            String note) {
+    }
+
+    public record RestoreRequest(@Size(max = 500) String reason) {
     }
 }

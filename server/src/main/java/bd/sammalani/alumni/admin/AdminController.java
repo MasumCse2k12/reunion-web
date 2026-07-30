@@ -95,8 +95,12 @@ public class AdminController {
 
     @DeleteMapping("/accounts/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @Operation(summary = "Remove admin access",
-            description = "Deletes the credential, not the person — they remain an alum.")
+    @Operation(summary = "Withdraw admin access",
+            description = """
+                    Withdraws the credential, not the person — they remain an alum with a \
+                    registration and a history. The account is deactivated rather than removed, \
+                    so it stays in the list marked disabled and the same person can be \
+                    reinstated later by creating them again.""")
     public void revoke(@PathVariable UUID id) {
         accounts.revoke(id);
     }

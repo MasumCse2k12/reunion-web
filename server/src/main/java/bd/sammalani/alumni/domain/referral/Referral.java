@@ -2,6 +2,10 @@ package bd.sammalani.alumni.domain.referral;
 
 import java.util.UUID;
 
+import org.hibernate.annotations.SoftDelete;
+import org.hibernate.annotations.SoftDeleteType;
+
+import bd.sammalani.alumni.common.audit.AuditBatchScoped;
 import bd.sammalani.alumni.common.jpa.Auditable;
 import bd.sammalani.alumni.domain.person.Person;
 import jakarta.persistence.Column;
@@ -18,19 +22,27 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/** "I know this person" — a member handing the committee a lead on a classmate. */
+/**
+ * "I know this person" — a member handing the committee a lead on a classmate.
+ * <p>
+ * A dismissed lead is soft-deleted rather than removed, so that the same wrong
+ * number arriving from four different people stays visible as four attempts
+ * instead of looking like a fresh idea each time.
+ */
 @Entity
 @Table(name = "referral")
+@SoftDelete(strategy = SoftDeleteType.TIMESTAMP, columnName = "deleted_at")
 @Getter
 @Setter
 @NoArgsConstructor
-public class Referral extends Auditable {
+public class Referral extends Auditable implements AuditBatchScoped {
 
     @Id
     @GeneratedValue
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    // EAGER because Person is soft-deleted; see the note on Person.
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "referrer_id")
     private Person referrer;
 
@@ -50,4 +62,9 @@ public class Referral extends Auditable {
 
     @Column(name = "matched_person_id")
     private UUID matchedPersonId;
+
+    @Override
+    public Integer auditBatchYear() {
+        return batchYear;
+    }
 }

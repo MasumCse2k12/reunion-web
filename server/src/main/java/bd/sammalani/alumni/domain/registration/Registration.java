@@ -7,8 +7,11 @@ import java.util.List;
 import java.util.UUID;
 
 import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.SoftDelete;
+import org.hibernate.annotations.SoftDeleteType;
 import org.hibernate.type.SqlTypes;
 
+import bd.sammalani.alumni.common.audit.AuditBatchScoped;
 import bd.sammalani.alumni.common.jpa.Auditable;
 import bd.sammalani.alumni.domain.event.Event;
 import bd.sammalani.alumni.domain.event.TicketType;
@@ -36,13 +39,20 @@ import lombok.Setter;
  * filters and pages on a single index without joining, and {@code paymentStatus}
  * is maintained from the payment rows in the same transaction for the same
  * reason. The payment table remains the source of truth about money.
+ * <p>
+ * Soft-deleted, and the uniqueness rules were rewritten for it: the index behind
+ * {@code (event_id, person_id)} is partial on {@code deleted_at is null}, so a
+ * withdrawn registration does not lock that member out of ever registering
+ * again. That failure would have surfaced as a bug in the claim flow, three
+ * screens away from its cause.
  */
 @Entity
 @Table(name = "registration")
+@SoftDelete(strategy = SoftDeleteType.TIMESTAMP, columnName = "deleted_at")
 @Getter
 @Setter
 @NoArgsConstructor
-public class Registration extends Auditable {
+public class Registration extends Auditable implements AuditBatchScoped {
 
     @Id
     @GeneratedValue
@@ -52,7 +62,9 @@ public class Registration extends Auditable {
     @JoinColumn(name = "event_id", nullable = false)
     private Event event;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    // EAGER because Person is soft-deleted; see the note on Person. Every read of
+    // a registration renders a name anyway, so the queue already joins this.
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "person_id", nullable = false)
     private Person person;
 
@@ -102,5 +114,10 @@ public class Registration extends Auditable {
     /** A member may still edit while nobody has judged it, or after a rejection. */
     public boolean editableByMember() {
         return status == RegistrationStatus.DRAFT || status == RegistrationStatus.REJECTED;
+    }
+
+    @Override
+    public Integer auditBatchYear() {
+        return batchYear;
     }
 }

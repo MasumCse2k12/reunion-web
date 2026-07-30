@@ -17,6 +17,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import bd.sammalani.alumni.common.audit.AuditContextFilter;
 import bd.sammalani.alumni.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 
@@ -77,6 +78,12 @@ public class SecurityConfig {
                                     "messageBn":"আপনার এই কাজের অনুমতি নেই।"}""");
                         }))
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                // After the JWT filter, because it reads the authentication that
+                // one establishes. Constructed here rather than injected: a Filter
+                // bean is also auto-registered in the outer servlet chain, where it
+                // would run before authentication exists and attribute every write
+                // in the application to "anonymous".
+                .addFilterAfter(new AuditContextFilter(), JwtAuthenticationFilter.class)
                 .build();
     }
 
