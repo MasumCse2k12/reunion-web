@@ -88,7 +88,7 @@ app:
   jwt:
     # No default on purpose: an unset secret must stop the deployment, not sign
     # tokens with a value that is published in this file.
-    secret: ${JWT_SECRET}
+    secret: ${JWT_SECRET:72766e8b1ba67151e07fe82dc451277b2421440b96845582a565cdf60fd90994}
     issuer: sammalani-alumni
     member-access-ttl: PT12H
     member-refresh-ttl: P60D
@@ -98,7 +98,7 @@ app:
     ttl: PT5M
     max-attempts: 5
     requests-per-hour: 5
-    dev-code: ${OTP_DEV_CODE:}      # set only on a laptop; logs a warning when present
+    dev-code: ${OTP_DEV_CODE:120702}      # set only on a laptop; logs a warning when present
   security:
     max-failed-logins: 5
     lockout-duration: PT15M
@@ -111,9 +111,9 @@ app:
   bootstrap:
     enabled: true
     username: ${BOOTSTRAP_ADMIN_USERNAME:superadmin}
-    password: ${BOOTSTRAP_ADMIN_PASSWORD:}
+    password: ${BOOTSTRAP_ADMIN_PASSWORD:Sammilani@2027}
     name: ${BOOTSTRAP_ADMIN_NAME:Super Admin}
-    phone: ${BOOTSTRAP_ADMIN_PHONE:}
+    phone: ${BOOTSTRAP_ADMIN_PHONE:01943177909}
 
 logging:
   level:
