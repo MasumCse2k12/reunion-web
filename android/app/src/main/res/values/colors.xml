@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Mirrors the web app's Tailwind CSS theme (src/index.css).
+    Brand = deep school green; Gold = heritage accent.
+-->
+<resources>
+    <!-- Brand (green) -->
+    <color name="brand_50">#f0f7f3</color>
+    <color name="brand_100">#dbeee3</color>
+    <color name="brand_600">#1f6b4a</color>
+    <color name="brand_700">#19553c</color>
+    <color name="brand_900">#123829</color>
+
+    <!-- Paper / background -->
+    <color name="paper">#faf8f4</color>
+
+    <!-- Utility -->
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+</resources>

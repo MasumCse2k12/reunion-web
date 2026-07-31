@@ -41,6 +41,26 @@ services:
       retries: 10
     restart: unless-stopped
 
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
+    volumes:
+      - miniodata:/data
+    ports:
+      # API on 9000 (loopback only — nginx is the public front door)
+      - "127.0.0.1:9000:9000"
+      # Web console on 9001 (loopback only — open for ops, never public)
+      - "127.0.0.1:9001:9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
   api:
     build:
       context: ./server
@@ -60,16 +80,23 @@ services:
       OTP_DEV_CODE: ${OTP_DEV_CODE:-}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
-    # Loopback only: on a server the host nginx is the front door, and it reaches
-    # this over 127.0.0.1. A bare "8090:8090" would also open the port on every
-    # other interface, so anyone could talk to the API over plain HTTP and skip
-    # TLS entirely. Still http://localhost:8090 from the machine itself.
+    # Default: loopback only — nginx is the public front door on a real server.
+    # For real-device testing on the same Wi-Fi set API_BIND=0.0.0.0 in .env.
     ports:
-      - "127.0.0.1:${API_PORT:-8090}:8090"
+      - "${API_BIND:-127.0.0.1}:${API_PORT:-8090}:8090"
+    environment:
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
+      MINIO_BUCKET: ${MINIO_BUCKET:-alumni-photos}
+      # In production, replace this with your public nginx/CDN URL in front of MinIO.
+      MINIO_PUBLIC_BASE_URL: ${MINIO_PUBLIC_BASE_URL:-http://localhost:9000}
     depends_on:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      minio:
         condition: service_healthy
     restart: unless-stopped
 
@@ -77,12 +104,13 @@ services:
     build:
       context: ./web
     image: sammalani/alumni-web:local
-    # Loopback only, for the reason above the api port.
+    # Default: loopback only. Set WEB_BIND=0.0.0.0 in .env for real-device testing.
     ports:
-      - "127.0.0.1:${WEB_PORT:-8080}:80"
+      - "${WEB_BIND:-127.0.0.1}:${WEB_PORT:-8080}:80"
     # No depends_on: the app still resolves everything from src/lib/api.ts and
     # localStorage, so it does not yet call the API. Add one when it does.
     restart: unless-stopped
 
 volumes:
   pgdata:
+  miniodata:

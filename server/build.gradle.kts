@@ -48,6 +48,13 @@ dependencies {
     // Argon2id lives behind BouncyCastle; Spring's Argon2PasswordEncoder needs it present.
     implementation("org.bouncycastle:bcprov-jdk18on:$bouncyCastleVersion")
 
+    // object storage (MinIO — S3-compatible, self-hosted)
+    // Exclude Jackson transitive deps to avoid version collisions with Spring Boot's own Jackson.
+    implementation("io.minio:minio:8.5.17") {
+        exclude(group = "com.fasterxml.jackson.core")
+        exclude(group = "com.fasterxml.jackson.datatype")
+    }
+
     // OpenAPI / Swagger UI
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:$springdocVersion")
 

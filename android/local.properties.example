@@ -1,0 +1,13 @@
+## Copy this file to local.properties (already gitignored) and fill in your values.
+##
+## Find your machine's LAN IP:
+##   macOS / Linux : ifconfig | grep "inet 192"
+##   Windows       : ipconfig  (look for IPv4 Address under Wi-Fi)
+##
+## Both your machine and your phone must be on the same Wi-Fi network.
+
+## URL the WebView loads — your machine's LAN IP, port 8080 (the web container).
+dev.web_app_url=http://192.168.1.x:8080
+
+## Android SDK location (Android Studio fills this in automatically).
+# sdk.dir=/Users/yourname/Library/Android/sdk

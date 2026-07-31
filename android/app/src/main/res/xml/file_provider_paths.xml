@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    FileProvider path configuration.
+
+    Camera captures are written to getCacheDir() (app-private, no storage
+    permission needed). The cache is cleared automatically by the OS when
+    the device runs low on space, which is fine — we only need the file
+    long enough to pass it back to the WebView callback.
+-->
+<paths>
+    <cache-path
+        name="camera_captures"
+        path="." />
+</paths>

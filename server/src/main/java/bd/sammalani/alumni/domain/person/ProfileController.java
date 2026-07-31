@@ -2,14 +2,22 @@ package bd.sammalani.alumni.domain.person;
 
 import java.time.LocalDate;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import bd.sammalani.alumni.common.error.ApiException;
 import bd.sammalani.alumni.security.CurrentUser;
+import bd.sammalani.alumni.storage.StorageService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -24,6 +32,7 @@ import lombok.RequiredArgsConstructor;
 public class ProfileController {
 
     private final PersonRepository people;
+    private final StorageService storage;
 
     @GetMapping
     @Operation(summary = "Who am I")
@@ -31,12 +40,6 @@ public class ProfileController {
         return PersonDto.from(currentPerson());
     }
 
-    /**
-     * A patch, not a put: the profile screen saves one section at a time, and a
-     * null here means "not supplied" rather than "clear it". Batch year and phone
-     * are absent on purpose — changing either is an identity change, and it goes
-     * through a coordinator rather than a text field.
-     */
     @PatchMapping
     @Operation(summary = "Update my details")
     public PersonDto update(@Valid @RequestBody ProfileInput input) {
@@ -46,6 +49,9 @@ public class ProfileController {
         }
         if (input.nameBn() != null) {
             person.setNameBn(input.nameBn().isBlank() ? null : input.nameBn().strip());
+        }
+        if (input.batchYear() != null) {
+            person.setBatchYear(input.batchYear());
         }
         if (input.email() != null) {
             person.setEmail(input.email().isBlank() ? null : input.email().strip());
@@ -68,6 +74,29 @@ public class ProfileController {
         return PersonDto.from(people.save(person));
     }
 
+    @PostMapping(value = "/photo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Upload or replace my profile photo")
+    public PersonDto uploadPhoto(@RequestParam("file") MultipartFile file) {
+        Person person = currentPerson();
+        // Fixed object key — MinIO overwrites the previous photo automatically.
+        // No explicit delete needed; the old file is gone the moment the PUT lands.
+        String url = storage.upload(person.getId(), file);
+        person.setPhotoUrl(url);
+        return PersonDto.from(people.save(person));
+    }
+
+    @DeleteMapping("/photo")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Remove my profile photo")
+    public void deletePhoto() {
+        Person person = currentPerson();
+        if (person.getPhotoUrl() != null) {
+            storage.delete(person.getPhotoUrl());
+            person.setPhotoUrl(null);
+            people.save(person);
+        }
+    }
+
     private Person currentPerson() {
         return people.findById(CurrentUser.member().personId()).orElseThrow(() -> ApiException.notFound(
                 "Profile not found.", "প্রোফাইল পাওয়া যায়নি।"));
@@ -76,6 +105,7 @@ public class ProfileController {
     public record ProfileInput(
             @Size(max = 120) String name,
             @Size(max = 120) String nameBn,
+            Integer batchYear,
             @Email String email,
             Gender gender,
             LocalDate dob,

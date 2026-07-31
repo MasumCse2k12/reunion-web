@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!--
+        Splash-screen theme — applied to MainActivity in the manifest.
+        On API 31+ the OS renders the splash; on older devices the
+        core-splashscreen library emulates it.
+        postSplashScreenTheme switches to the real app theme after the
+        splash finishes.
+    -->
+    <style name="Theme.AlumniApp" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/brand_600</item>
+        <item name="postSplashScreenTheme">@style/Theme.AlumniApp.Main</item>
+    </style>
+
+    <!--
+        Main app theme — no ActionBar (WebView fills the whole window),
+        status bar matches the brand green.
+    -->
+    <style name="Theme.AlumniApp.Main" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/brand_600</item>
+        <item name="colorPrimaryVariant">@color/brand_700</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="android:colorBackground">@color/paper</item>
+        <item name="android:statusBarColor">@color/brand_600</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:navigationBarColor">@color/brand_900</item>
+    </style>
+
+</resources>

@@ -1,0 +1,63 @@
+plugins {
+    id 'com.android.application'
+}
+
+// Pull dev-only settings from local.properties (gitignored).
+// Copy local.properties.example → local.properties and fill in your LAN IP.
+Properties localProps = new Properties()
+File localPropsFile = rootProject.file('local.properties')
+if (localPropsFile.exists()) {
+    localPropsFile.withInputStream { stream -> localProps.load(stream) }
+}
+
+android {
+    namespace 'bd.sammalani.alumni'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "bd.sammalani.alumni"
+        minSdk 21          // Android 5.0 — covers 99 %+ of active devices
+        targetSdk 34
+        versionCode 1
+        versionName "1.0.0"
+
+        // Production URL — override per buildType below.
+        buildConfigField "String", "WEB_APP_URL", '"https://alumni.sammalani.edu.bd"'
+    }
+
+    buildTypes {
+        debug {
+            debuggable true
+            applicationIdSuffix ".debug"
+            // Falls back to the emulator alias; override in local.properties:
+            //   dev.web_app_url=http://192.168.1.x:8080
+            def devUrl = localProps.getProperty('dev.web_app_url', 'http://10.0.2.2:8080')
+            buildConfigField "String", "WEB_APP_URL", "\"${devUrl}\""
+        }
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            buildConfigField "String", "WEB_APP_URL", '"https://alumni.sammalani.edu.bd"'
+        }
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'com.google.android.material:material:1.12.0'
+    implementation 'androidx.activity:activity:1.9.3'
+    implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
+    // Splash screen back-ported to API 21. On API 31+ it delegates to the OS.
+    implementation 'androidx.core:core-splashscreen:1.0.1'
+}

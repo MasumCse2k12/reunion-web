@@ -11,6 +11,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
@@ -87,6 +88,12 @@ public class GlobalExceptionHandler {
         return problem(HttpStatus.CONFLICT, "conflict",
                 "That conflicts with something already recorded.",
                 "এটি আগে থেকে থাকা তথ্যের সাথে সাংঘর্ষিক।");
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    ProblemDetail onFileTooLarge(MaxUploadSizeExceededException ex) {
+        return problem(HttpStatus.BAD_REQUEST, "file_too_large",
+                "Photo must be smaller than 5 MB.", "ছবির আকার ৫ MB-এর বেশি হওয়া যাবে না।");
     }
 
     @ExceptionHandler(AccessDeniedException.class)

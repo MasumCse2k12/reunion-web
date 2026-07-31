@@ -1,9 +1,50 @@
-import { useState } from 'react'
-import { Camera, CheckCircle2, Save } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { Camera, CheckCircle2, Save, Trash2 } from 'lucide-react'
 import { api } from '../lib/api'
 import { BLOOD_GROUPS, GENDERS, type BloodGroup, type Gender } from '../mock/data'
 import { useApp } from '../lib/store'
 import { Avatar, Badge, Button, Card, Field, Input, SectionTitle, Select } from '../components/ui'
+
+/**
+ * Resize and compress an image file to a JPEG using the Canvas API.
+ * Max dimension 800 px, quality 0.82 — brings a typical phone photo from
+ * 3-5 MB down to 80-200 KB before it ever leaves the device.
+ */
+function compressImage(file: File): Promise<File> {
+  const MAX_DIM = 800
+  const QUALITY = 0.82
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    const objectUrl = URL.createObjectURL(file)
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl)
+      let { width, height } = img
+      if (width > MAX_DIM || height > MAX_DIM) {
+        if (width >= height) {
+          height = Math.round((height * MAX_DIM) / width)
+          width = MAX_DIM
+        } else {
+          width = Math.round((width * MAX_DIM) / height)
+          height = MAX_DIM
+        }
+      }
+      const canvas = document.createElement('canvas')
+      canvas.width = width
+      canvas.height = height
+      canvas.getContext('2d')!.drawImage(img, 0, 0, width, height)
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) { reject(new Error('Image compression failed')); return }
+          resolve(new File([blob], 'profile.jpg', { type: 'image/jpeg' }))
+        },
+        'image/jpeg',
+        QUALITY,
+      )
+    }
+    img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error('Failed to load image')) }
+    img.src = objectUrl
+  })
+}
 
 export default function Profile() {
   const { t, lang, n, yr, user, setUser } = useApp()
@@ -20,6 +61,42 @@ export default function Profile() {
   })
   const [busy, setBusy] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [photoUploading, setPhotoUploading] = useState(false)
+  const [photoError, setPhotoError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setPhotoError(null)
+    setPhotoUploading(true)
+    try {
+      const compressed = await compressImage(file)
+      const updated = await api.uploadPhoto(compressed)
+      setUser(updated)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Upload failed'
+      setPhotoError(msg)
+    } finally {
+      setPhotoUploading(false)
+      // Reset so the same file can be selected again after an error.
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  async function handlePhotoDelete() {
+    setPhotoError(null)
+    setPhotoUploading(true)
+    try {
+      await api.deletePhoto()
+      setUser({ ...user!, photoUrl: undefined })
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Delete failed'
+      setPhotoError(msg)
+    } finally {
+      setPhotoUploading(false)
+    }
+  }
 
   async function save() {
     setBusy(true)
@@ -52,12 +129,26 @@ export default function Profile() {
 
       <Card className="flex items-center gap-4">
         <div className="relative">
-          <Avatar name={form.name || 'A'} size="xl" />
-          <button className="absolute -bottom-1 -right-1 grid size-10 place-items-center rounded-full bg-brand-600 text-white shadow-md">
+          <Avatar name={form.name || 'A'} photoUrl={user?.photoUrl} size="xl" />
+          {/* Hidden file input — accept images only, 5 MB max enforced server-side */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            onChange={handlePhotoChange}
+          />
+          <button
+            type="button"
+            disabled={photoUploading}
+            onClick={() => fileInputRef.current?.click()}
+            className="absolute -bottom-1 -right-1 grid size-10 place-items-center rounded-full bg-brand-600 text-white shadow-md disabled:opacity-60"
+            title={lang === 'bn' ? 'ছবি পরিবর্তন করুন' : 'Change photo'}
+          >
             <Camera className="size-5" />
           </button>
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <div className="truncate text-xl font-extrabold text-ink-900">{form.name}</div>
           <div className="flex flex-wrap items-center gap-1.5">
             <Badge tone="green">
@@ -66,6 +157,25 @@ export default function Profile() {
             {form.bloodGroup && <Badge tone="red">{form.bloodGroup}</Badge>}
           </div>
           {user?.phone && <div className="mt-1 text-sm tabular-nums text-ink-400">{n(user.phone)}</div>}
+          {photoUploading && (
+            <p className="mt-1 text-sm text-brand-600">{lang === 'bn' ? 'আপলোড হচ্ছে…' : 'Uploading…'}</p>
+          )}
+          {photoError && <p className="mt-1 text-sm text-red-600">{photoError}</p>}
+          {!photoUploading && !photoError && (
+            <p className="mt-1 text-xs text-ink-400">
+              {lang === 'bn' ? 'JPG, PNG বা WebP · সর্বোচ্চ ৫ MB' : 'JPG, PNG or WebP · max 5 MB'}
+            </p>
+          )}
+          {user?.photoUrl && !photoUploading && (
+            <button
+              type="button"
+              onClick={handlePhotoDelete}
+              className="mt-1.5 flex items-center gap-1 text-xs text-ink-400 hover:text-red-600"
+            >
+              <Trash2 className="size-3" />
+              {lang === 'bn' ? 'ছবি মুছুন' : 'Remove photo'}
+            </button>
+          )}
         </div>
       </Card>
 

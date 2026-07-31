@@ -48,7 +48,7 @@ export default function Dashboard() {
     <div className="space-y-6">
       {/* ---------- Greeting ---------- */}
       <div className="flex items-center gap-4">
-        <Avatar name={me.name} size="lg" />
+        <Avatar name={me.name} photoUrl={me.photoUrl} size="lg" />
         <div className="min-w-0">
           <p className="text-ink-500">{t('dash.greeting')},</p>
           <h1 className="truncate text-2xl font-extrabold text-ink-900">{lang === 'bn' ? me.nameBn : me.name}</h1>
@@ -230,7 +230,7 @@ export default function Dashboard() {
             const done = referDone.includes(p.id)
             return (
               <Card key={p.id} className={cx('flex items-center gap-3 p-3', done && 'border-brand-200 bg-brand-50/50')}>
-                <Avatar name={p.name} />
+                <Avatar name={p.name} photoUrl={p.photoUrl} />
                 <div className="min-w-0 flex-1">
                   <div className="truncate font-bold text-ink-900">{lang === 'bn' ? p.nameBn : p.name}</div>
                   <div className="text-sm text-ink-400">
@@ -276,7 +276,7 @@ export default function Dashboard() {
         {referTarget && (
           <div className="space-y-4">
             <div className="flex items-center gap-3 rounded-2xl bg-white p-3">
-              <Avatar name={referTarget.name} />
+              <Avatar name={referTarget.name} photoUrl={referTarget.photoUrl} />
               <div className="min-w-0">
                 <div className="truncate font-bold text-ink-900">
                   {lang === 'bn' ? referTarget.nameBn : referTarget.name}

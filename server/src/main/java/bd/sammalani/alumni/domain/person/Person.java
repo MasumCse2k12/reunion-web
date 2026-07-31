@@ -96,6 +96,9 @@ public class Person extends Auditable implements AuditBatchScoped {
 
     private String city;
 
+    @Column(name = "photo_url")
+    private String photoUrl;
+
     @Column(nullable = false)
     private boolean deceased = false;
 

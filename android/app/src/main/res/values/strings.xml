@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Sammalani Alumni</string>
+    <!-- Shown in the system file/photo chooser dialog title -->
+    <string name="choose_photo">Choose Photo · ছবি বেছে নিন</string>
+</resources>

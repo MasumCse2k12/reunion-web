@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ArrowRight, CalendarDays, MapPin, Phone, Search, Sparkles } from 'lucide-react'
 import { useApp } from '../lib/store'
-import { api, EVENT, type Batch, type Notice } from '../lib/api'
+import { api, CONTACT_PHONE, EVENT, type Batch, type Notice } from '../lib/api'
 import { SCHOOL, TEACHERS } from '../mock/data'
 import { Badge, Button, Card, SectionTitle, Stat, cx } from '../components/ui'
 import { LangToggle, SchoolMark } from '../components/Layout'
@@ -273,11 +273,11 @@ export default function Landing() {
           <div className="font-bold text-ink-700">{lang === 'bn' ? SCHOOL.nameBn : SCHOOL.nameEn}</div>
           <div className="text-sm">{lang === 'bn' ? SCHOOL.locationBn : SCHOOL.locationEn}</div>
           <a
-            href="tel:+8801712345678"
+            href={`tel:+880${CONTACT_PHONE.replace(/^0/, '')}`}
             className="mt-4 inline-flex items-center gap-2 rounded-full bg-brand-600 px-5 py-2.5 font-semibold text-white"
           >
             <Phone className="size-5" />
-            {t('auth.needHelp')}: 01712-345678
+            {t('auth.needHelp')}: {CONTACT_PHONE}
           </a>
           <p className="mt-5 text-xs text-ink-400">
             {lang === 'bn'

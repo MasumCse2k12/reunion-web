@@ -3,6 +3,7 @@ import { ArrowLeft, Phone } from 'lucide-react'
 import { useApp } from '../lib/store'
 import { cx } from './ui'
 import { LangToggle, SchoolMark } from './Layout'
+import { CONTACT_PHONE } from '../lib/api'
 
 export default function AuthShell({
   children,
@@ -36,11 +37,11 @@ export default function AuthShell({
 
       <footer className="pb-8 text-center">
         <a
-          href="tel:+8801712345678"
+          href={`tel:+880${CONTACT_PHONE.replace(/^0/, '')}`}
           className="inline-flex items-center gap-2 rounded-full border-2 border-brand-200 bg-white px-5 py-2.5 font-semibold text-brand-700"
         >
           <Phone className="size-5" />
-          {t('auth.needHelp')}: 01712-345678
+          {t('auth.needHelp')}: {CONTACT_PHONE}
         </a>
       </footer>
     </div>

@@ -93,7 +93,7 @@ export default function BatchDetail() {
       <div className="grid gap-2 sm:grid-cols-2">
         {groups[tab].map((p) => (
           <Card key={p.id} className={cx('flex items-center gap-3 p-3', p.deceased && 'bg-paper-2/60')}>
-            <Avatar name={p.name} />
+            <Avatar name={p.name} photoUrl={p.photoUrl} />
             <div className="min-w-0 flex-1">
               <div className="truncate font-bold text-ink-900">
                 {p.deceased && <span className="text-ink-400">{t('batches.deceased')} </span>}

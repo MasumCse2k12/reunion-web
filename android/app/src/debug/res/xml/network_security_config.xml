@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    DEBUG override — replaces the main network_security_config.xml for debug
+    builds only. Never included in a release APK.
+
+    Allows:
+      * Cleartext HTTP to any host (covers any LAN IP without listing them)
+      * User-installed CA certificates (Charles, Proxyman, mitmproxy, etc.)
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

@@ -101,7 +101,7 @@ export default function Layout() {
           {user && (
             <div className="flex items-center gap-2">
               <span className="hidden sm:block">
-                <Avatar name={user.name} size="sm" />
+                <Avatar name={user.name} photoUrl={user.photoUrl} size="sm" />
               </span>
               <button
                 onClick={async () => {

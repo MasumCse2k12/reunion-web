@@ -51,6 +51,11 @@ spring:
   cache:
     type: redis
 
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
+
   threads:
     virtual:
       # Java 21+ virtual threads: this service is almost entirely waiting on
@@ -123,7 +128,15 @@ app:
     username: ${BOOTSTRAP_ADMIN_USERNAME:superadmin}
     password: ${BOOTSTRAP_ADMIN_PASSWORD:Sammilani@2027}
     name: ${BOOTSTRAP_ADMIN_NAME:Super Admin}
-    phone: ${BOOTSTRAP_ADMIN_PHONE:01943177909}
+    phone: "01943177909"
+  storage:
+    endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+    access-key: ${MINIO_ACCESS_KEY:minioadmin}
+    secret-key: ${MINIO_SECRET_KEY:minioadmin}
+    bucket: ${MINIO_BUCKET:alumni-photos}
+    # Public base URL used to construct photo URLs returned in API responses.
+    # In production this is typically your CDN / nginx reverse-proxy in front of MinIO.
+    public-base-url: ${MINIO_PUBLIC_BASE_URL:http://localhost:9000}
 
 logging:
   level:

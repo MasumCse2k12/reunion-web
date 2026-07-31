@@ -25,12 +25,13 @@ public record PersonDto(
         String bloodGroup,
         String occupation,
         String city,
+        String photoUrl,
         boolean deceased) {
 
     public static PersonDto from(Person p) {
         return new PersonDto(p.getId(), p.getName(), p.getNameBn(), p.getBatchYear(), p.getStatus(),
                 p.getPhone(), p.getEmail(), p.getGender(), p.getDob(), p.getBloodGroup(),
-                p.getOccupation(), p.getCity(), p.isDeceased());
+                p.getOccupation(), p.getCity(), p.getPhotoUrl(), p.isDeceased());
     }
 
     /**
@@ -41,6 +42,6 @@ public record PersonDto(
     public static PersonDto masked(Person p) {
         return new PersonDto(p.getId(), p.getName(), p.getNameBn(), p.getBatchYear(), p.getStatus(),
                 PhoneNumbers.mask(p.getPhone()), null, null, null, null,
-                p.getOccupation(), p.getCity(), p.isDeceased());
+                p.getOccupation(), p.getCity(), p.getPhotoUrl(), p.isDeceased());
     }
 }

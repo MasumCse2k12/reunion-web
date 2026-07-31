@@ -23,7 +23,8 @@ public record AppProperties(
         Security security,
         Event event,
         Cors cors,
-        Bootstrap bootstrap) {
+        Bootstrap bootstrap,
+        Storage storage) {
 
     /**
      * Signing material for both token audiences. The secret must be supplied by
@@ -63,6 +64,20 @@ public record AppProperties(
     }
 
     public record Cors(@DefaultValue("http://localhost:5173") List<String> allowedOrigins) {
+    }
+
+    /**
+     * MinIO (S3-compatible) object storage for profile photos and any future
+     * binary assets. {@code endpoint} is the internal SDK URL; {@code publicBaseUrl}
+     * is what goes in the photo_url column so browsers can load the image
+     * (may differ in production if MinIO sits behind nginx or a CDN).
+     */
+    public record Storage(
+            @DefaultValue("http://localhost:9000") String endpoint,
+            @DefaultValue("minioadmin") String accessKey,
+            @DefaultValue("minioadmin") String secretKey,
+            @DefaultValue("alumni-photos") String bucket,
+            @DefaultValue("http://localhost:9000") String publicBaseUrl) {
     }
 
     /**

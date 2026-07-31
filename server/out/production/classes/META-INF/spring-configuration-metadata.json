@@ -40,6 +40,12 @@
       "type": "bd.sammalani.alumni.config.AppProperties$Security",
       "sourceType": "bd.sammalani.alumni.config.AppProperties",
       "sourceMethod": "security()"
+    },
+    {
+      "name": "app.storage",
+      "type": "bd.sammalani.alumni.config.AppProperties$Storage",
+      "sourceType": "bd.sammalani.alumni.config.AppProperties",
+      "sourceMethod": "storage()"
     }
   ],
   "properties": [
@@ -165,6 +171,36 @@
       "type": "java.lang.Integer",
       "sourceType": "bd.sammalani.alumni.config.AppProperties$Security",
       "defaultValue": 5
+    },
+    {
+      "name": "app.storage.access-key",
+      "type": "java.lang.String",
+      "sourceType": "bd.sammalani.alumni.config.AppProperties$Storage",
+      "defaultValue": "minioadmin"
+    },
+    {
+      "name": "app.storage.bucket",
+      "type": "java.lang.String",
+      "sourceType": "bd.sammalani.alumni.config.AppProperties$Storage",
+      "defaultValue": "alumni-photos"
+    },
+    {
+      "name": "app.storage.endpoint",
+      "type": "java.lang.String",
+      "sourceType": "bd.sammalani.alumni.config.AppProperties$Storage",
+      "defaultValue": "http:\/\/localhost:9000"
+    },
+    {
+      "name": "app.storage.public-base-url",
+      "type": "java.lang.String",
+      "sourceType": "bd.sammalani.alumni.config.AppProperties$Storage",
+      "defaultValue": "http:\/\/localhost:9000"
+    },
+    {
+      "name": "app.storage.secret-key",
+      "type": "java.lang.String",
+      "sourceType": "bd.sammalani.alumni.config.AppProperties$Storage",
+      "defaultValue": "minioadmin"
     }
   ],
   "hints": [],

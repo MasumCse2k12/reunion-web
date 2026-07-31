@@ -118,6 +118,7 @@ export type Person = {
   bloodGroup?: BloodGroup
   occupation?: string
   city?: string
+  photoUrl?: string
   deceased?: boolean
 }
 

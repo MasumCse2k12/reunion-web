@@ -26,6 +26,8 @@ import {
 
 const BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:8090/smbc'
 
+export const CONTACT_PHONE = (import.meta.env.VITE_CONTACT_PHONE as string | undefined) ?? '01943177909'
+
 const MEMBER_ACCESS = 'sammalani.member.access'
 const MEMBER_REFRESH = 'sammalani.member.refresh'
 const ADMIN_ACCESS = 'sammalani.admin.access'
@@ -77,6 +79,25 @@ async function http<T>(method: string, path: string, body?: unknown, token?: str
   return data as T
 }
 
+async function memberHttpMultipart<T>(method: string, path: string, formData: FormData): Promise<T> {
+  const token = localStorage.getItem(MEMBER_ACCESS)
+  const headers: Record<string, string> = {}
+  if (token) headers['Authorization'] = `Bearer ${token}`
+  // Do NOT set Content-Type — the browser must set it with the boundary.
+  const res = await fetch(`${BASE}${path}`, { method, headers, body: formData })
+  if (res.status === 204) return undefined as T
+  const ct = res.headers.get('content-type') ?? ''
+  const data: unknown = ct.includes('json') ? await res.json() : undefined
+  if (!res.ok) {
+    const d = (data ?? {}) as Record<string, unknown>
+    const msg = String(d.detail ?? d.message ?? 'Something went wrong')
+    const msgBn = String(d.messageBn ?? 'কিছু একটা সমস্যা হয়েছে')
+    const code = d.code ? String(d.code) : undefined
+    throw new ApiError(msg, msgBn, res.status, code)
+  }
+  return data as T
+}
+
 async function memberHttp<T>(method: string, path: string, body?: unknown): Promise<T> {
   const token = localStorage.getItem(MEMBER_ACCESS)
   try {
@@ -123,6 +144,7 @@ type PersonRaw = {
   bloodGroup?: string
   occupation?: string
   city?: string
+  photoUrl?: string
   deceased: boolean
 }
 
@@ -246,6 +268,7 @@ function mapPerson(r: PersonRaw): Person {
     bloodGroup: r.bloodGroup as BloodGroup | undefined,
     occupation: r.occupation,
     city: r.city,
+    photoUrl: r.photoUrl,
     deceased: r.deceased,
   }
 }
@@ -469,11 +492,22 @@ export const api = {
     return mapPerson(await memberHttp<PersonRaw>('GET', '/api/v1/me'))
   },
 
+  async uploadPhoto(file: File): Promise<Person> {
+    const fd = new FormData()
+    fd.append('file', file)
+    return mapPerson(await memberHttpMultipart<PersonRaw>('POST', '/api/v1/me/photo', fd))
+  },
+
+  async deletePhoto(): Promise<void> {
+    await memberHttp<void>('DELETE', '/api/v1/me/photo')
+  },
+
   async updateMe(patch: Partial<Person>): Promise<Person> {
     return mapPerson(
       await memberHttp<PersonRaw>('PATCH', '/api/v1/me', {
         name: patch.name,
         nameBn: patch.nameBn,
+        batchYear: patch.batchYear,
         email: patch.email,
         gender: patch.gender,
         dob: patch.dob,

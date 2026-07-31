@@ -208,7 +208,17 @@ const AV_COLORS = [
   'bg-stone-600',
 ]
 
-export function Avatar({ name, size = 'md' }: { name: string; size?: 'sm' | 'md' | 'lg' | 'xl' }) {
+export function Avatar({ name, photoUrl, size = 'md' }: { name: string; photoUrl?: string; size?: 'sm' | 'md' | 'lg' | 'xl' }) {
+  const sizes = { sm: 'size-9 text-sm', md: 'size-12 text-base', lg: 'size-16 text-xl', xl: 'size-24 text-3xl' }
+  if (photoUrl) {
+    return (
+      <img
+        src={photoUrl}
+        alt={name}
+        className={cx('inline-block shrink-0 rounded-full object-cover', sizes[size])}
+      />
+    )
+  }
   const clean = name.replace(/^(Md\.?|Mst\.?|Late|মোঃ|মোছাঃ|মরহুম)\s*/i, '').trim()
   const initials = clean
     .split(/\s+/)
@@ -218,7 +228,6 @@ export function Avatar({ name, size = 'md' }: { name: string; size?: 'sm' | 'md'
     .toUpperCase()
   let h = 0
   for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) >>> 0
-  const sizes = { sm: 'size-9 text-sm', md: 'size-12 text-base', lg: 'size-16 text-xl', xl: 'size-24 text-3xl' }
   return (
     <span
       className={cx(

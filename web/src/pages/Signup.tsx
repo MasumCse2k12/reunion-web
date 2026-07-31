@@ -222,7 +222,7 @@ export default function Signup() {
                   }}
                   className="flex w-full items-center gap-3 rounded-2xl border-2 border-paper-2 bg-white p-3 text-left transition hover:border-brand-300 hover:bg-brand-50"
                 >
-                  <Avatar name={p.name} />
+                  <Avatar name={p.name} photoUrl={p.photoUrl} />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-bold text-ink-900">{lang === 'bn' ? p.nameBn : p.name}</span>
                     <span className="block truncate text-sm text-ink-400">
@@ -282,7 +282,7 @@ export default function Signup() {
 
           {picked ? (
             <Card className="mt-4 flex items-center gap-3 border-brand-200 bg-brand-50/60">
-              <Avatar name={picked.name} size="lg" />
+              <Avatar name={picked.name} photoUrl={picked.photoUrl} size="lg" />
               <div className="min-w-0">
                 <div className="truncate text-lg font-bold text-ink-900">
                   {lang === 'bn' ? picked.nameBn : picked.name}
@@ -372,7 +372,7 @@ export default function Signup() {
 
           <Card className="mt-6 text-left">
             <div className="flex items-center gap-3">
-              <Avatar name={picked?.name ?? manualName} size="lg" />
+              <Avatar name={picked?.name ?? manualName} photoUrl={picked?.photoUrl} size="lg" />
               <div className="min-w-0">
                 <div className="truncate text-lg font-bold text-ink-900">
                   {picked ? (lang === 'bn' ? picked.nameBn : picked.name) : manualName}
