@@ -3,4 +3,11 @@
     <string name="app_name">Sammalani Alumni</string>
     <!-- Shown in the system file/photo chooser dialog title -->
     <string name="choose_photo">Choose Photo · ছবি বেছে নিন</string>
+
+    <!-- Grand Reunion 2027 loading splash -->
+    <string name="splash_school_en">SAMMALANI ALUMNI ASSOCIATION</string>
+    <string name="splash_school_bn">সম্মালানী প্রাক্তন ছাত্র সংসদ</string>
+    <string name="splash_event">GRAND REUNION</string>
+    <string name="splash_year">2027</string>
+    <string name="splash_tagline">একসাথে আবার  ·  Together Again</string>
 </resources>

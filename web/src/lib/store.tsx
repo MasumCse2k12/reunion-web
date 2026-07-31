@@ -498,10 +498,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const session = api.getSession()
     if (session) {
-      api.me().then((p) => {
-        setUser(p)
-        setReady(true)
-      })
+      api.me()
+        .then((p) => setUser(p))
+        .catch(() => {/* token invalid / network error — user stays null → redirect to login */})
+        .finally(() => setReady(true))
     } else {
       setReady(true)
     }

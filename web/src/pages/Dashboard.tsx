@@ -19,14 +19,24 @@ export default function Dashboard() {
   const { t, lang, n, yr, money } = useApp()
   const navigate = useNavigate()
   const [data, setData] = useState<DashboardData | null>(null)
+  const [loadError, setLoadError] = useState(false)
   const [referTarget, setReferTarget] = useState<Person | null>(null)
   const [referPhone, setReferPhone] = useState('')
   const [referDone, setReferDone] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
-    api.dashboard().then(setData)
+    api.dashboard().then(setData).catch(() => setLoadError(true))
   }, [])
+
+  if (loadError) return (
+    <div className="flex flex-col items-center gap-4 py-20 text-center">
+      <p className="text-ink-500">{lang === 'bn' ? 'তথ্য লোড করা যায়নি। ইন্টারনেট সংযোগ যাচাই করুন।' : 'Could not load your dashboard. Check your connection.'}</p>
+      <button className="font-semibold text-brand-700 underline underline-offset-4" onClick={() => { setLoadError(false); api.dashboard().then(setData).catch(() => setLoadError(true)) }}>
+        {lang === 'bn' ? 'আবার চেষ্টা করুন' : 'Try again'}
+      </button>
+    </div>
+  )
 
   if (!data) return <Spinner label={t('common.loading')} />
 

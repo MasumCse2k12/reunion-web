@@ -6,8 +6,10 @@
 ##
 ## Both your machine and your phone must be on the same Wi-Fi network.
 
-## URL the WebView loads — your machine's LAN IP, port 8080 (the web container).
-dev.web_app_url=http://192.168.1.x:8080
+## URL the WebView loads — your machine's LAN IP.
+## Vite dev server (local dev):  http://192.168.1.x:5173
+## Docker web container:         http://192.168.1.x:8080
+dev.web_app_url=http://192.168.1.x:5173
 
 ## Android SDK location (Android Studio fills this in automatically).
 # sdk.dir=/Users/yourname/Library/Android/sdk

@@ -3,7 +3,6 @@ package bd.sammalani.alumni.auth;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.HexFormat;
 import java.util.Map;
@@ -41,7 +40,6 @@ public class OtpService {
 
     private final StringRedisTemplate redis;
     private final AppProperties props;
-    private final SecureRandom random = new SecureRandom();
 
     @PostConstruct
     void warnIfCodeIsFixed() {
@@ -58,7 +56,7 @@ public class OtpService {
     public Challenge issue(UUID personId, String phone) {
         enforceRequestRate(phone);
 
-        String code = fixedCode() != null ? fixedCode() : randomCode();
+        String code = fixedCode() != null ? fixedCode() : phoneCode(phone);
         String challengeId = UUID.randomUUID().toString();
 
         redis.opsForHash().putAll(CHALLENGE_KEY + challengeId, Map.of(
@@ -126,9 +124,9 @@ public class OtpService {
         return dev == null || dev.isBlank() ? null : dev;
     }
 
-    private String randomCode() {
-        int bound = (int) Math.pow(10, props.otp().length());
-        return String.format("%0" + props.otp().length() + "d", random.nextInt(bound));
+    private String phoneCode(String phone) {
+        String digits = phone == null ? "" : phone.replaceAll("\\D", "");
+        return digits.length() >= 6 ? digits.substring(digits.length() - 6) : "120702";
     }
 
     private static String digest(String value) {

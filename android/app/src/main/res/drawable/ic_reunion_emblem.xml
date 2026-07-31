@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Grand Reunion 2027 crest emblem.
+    Two concentric gold rings, 8 compass-point dots, and a 4-pointed star.
+    Viewport: 120 × 120, center: (60, 60).
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+
+    <!-- Outer ring  (r = 50, stroke only) -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#d4a040"
+        android:strokeWidth="2.5"
+        android:pathData="M10,60 A50,50 0 0,1 110,60 A50,50 0 0,1 10,60 Z" />
+
+    <!-- Inner ring  (r = 42, stroke only) -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#d4a040"
+        android:strokeWidth="1.5"
+        android:pathData="M18,60 A42,42 0 0,1 102,60 A42,42 0 0,1 18,60 Z" />
+
+    <!--
+        8 filled dots at compass points, radius 46 from centre.
+        N  (60,14)      NE (92.5,27.5)
+        E  (106,60)     SE (92.5,92.5)
+        S  (60,106)     SW (27.5,92.5)
+        W  (14,60)      NW (27.5,27.5)
+        Each dot is a tiny circle drawn as two semicircular arcs (r = 3.5).
+    -->
+    <path
+        android:fillColor="#d4a040"
+        android:pathData="
+            M56.5,14   A3.5,3.5 0 0,1 63.5,14   A3.5,3.5 0 0,1 56.5,14   Z
+            M89,27.5   A3.5,3.5 0 0,1 96,27.5   A3.5,3.5 0 0,1 89,27.5   Z
+            M102.5,60  A3.5,3.5 0 0,1 109.5,60  A3.5,3.5 0 0,1 102.5,60  Z
+            M89,92.5   A3.5,3.5 0 0,1 96,92.5   A3.5,3.5 0 0,1 89,92.5   Z
+            M56.5,106  A3.5,3.5 0 0,1 63.5,106  A3.5,3.5 0 0,1 56.5,106  Z
+            M24,92.5   A3.5,3.5 0 0,1 31,92.5   A3.5,3.5 0 0,1 24,92.5   Z
+            M10.5,60   A3.5,3.5 0 0,1 17.5,60   A3.5,3.5 0 0,1 10.5,60   Z
+            M24,27.5   A3.5,3.5 0 0,1 31,27.5   A3.5,3.5 0 0,1 24,27.5   Z" />
+
+    <!--
+        4-pointed star, outer r = 20, inner r = 8, centred at (60,60).
+        Outer tips: top(60,40) right(80,60) bottom(60,80) left(40,60).
+        Inner corners at 45° intervals, r = 8.
+    -->
+    <path
+        android:fillColor="#d4a040"
+        android:pathData="M60,40 L65.66,54.34 L80,60 L65.66,65.66
+                          L60,80 L54.34,65.66 L40,60 L54.34,54.34 Z" />
+
+</vector>

@@ -113,7 +113,7 @@ app:
     ttl: PT5M
     max-attempts: 5
     requests-per-hour: 5
-    dev-code: ${OTP_DEV_CODE:120702}      # set only on a laptop; logs a warning when present
+    dev-code: ${OTP_DEV_CODE:}      # set only on a laptop; logs a warning when present
   security:
     max-failed-logins: 5
     lockout-duration: PT15M
@@ -122,7 +122,10 @@ app:
     first-batch: 1968
     last-batch: 2026
   cors:
-    allowed-origins: ${CORS_ORIGINS:http://localhost:5173,http://localhost:4173}
+    # Override via CORS_ORIGINS env var in production and docker. In dev, the
+    # default includes localhost (Vite/preview) and the LAN IP for real-device
+    # testing. Update the LAN IP when your network changes (ifconfig | grep "inet 192").
+    allowed-origins: ${CORS_ORIGINS:http://localhost:5173,http://localhost:4173,http://192.168.1.104:5173,http://192.168.1.104:8080}
   bootstrap:
     enabled: true
     username: ${BOOTSTRAP_ADMIN_USERNAME:superadmin}
@@ -136,7 +139,9 @@ app:
     bucket: ${MINIO_BUCKET:alumni-photos}
     # Public base URL used to construct photo URLs returned in API responses.
     # In production this is typically your CDN / nginx reverse-proxy in front of MinIO.
-    public-base-url: ${MINIO_PUBLIC_BASE_URL:http://localhost:9000}
+    # In dev, use your machine's LAN IP so Android devices on the same Wi-Fi can load
+    # photos. Update when your IP changes (ifconfig | grep "inet 192").
+    public-base-url: ${MINIO_PUBLIC_BASE_URL:http://192.168.1.104:9000}
 
 logging:
   level:

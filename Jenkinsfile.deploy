@@ -1,0 +1,204 @@
+// =============================================================================
+//  Sammalani Alumni — self-hosted deployment pipeline
+//  Deploys both the React/Vite web app and the Spring Boot API as Docker
+//  containers on the Jenkins agent (your VPS / on-prem server).
+//
+//  This is intentionally separate from Jenkinsfile, which builds, typechecks
+//  and deploys to Vercel. Use this file when you are running your own server.
+// =============================================================================
+//
+// -----------------------------------------------------------------------------
+//  A. Jenkins setup
+// -----------------------------------------------------------------------------
+//   - Plugins:  Pipeline, Git, Docker Pipeline, Credentials Binding
+//   - Jenkins user must be in the docker group:
+//         sudo usermod -aG docker jenkins && sudo systemctl restart jenkins
+//
+// -----------------------------------------------------------------------------
+//  B. Credentials  (Manage Jenkins → Credentials → Global → Add credential)
+// -----------------------------------------------------------------------------
+//   Kind: Username with password
+//     Username: MasumCse2k12
+//     Password: <GitHub personal access token, scope: repo>
+//     ID:       masum-git
+//
+//   Kind: Secret text  (one entry per row below)
+//     ID                              Secret
+//     reunion-jwt-secret              <256-bit hex — openssl rand -hex 32>
+//     reunion-db-password             <Postgres password>
+//     reunion-minio-secret-key        <MinIO secret key>
+//     reunion-bootstrap-admin-pass    <first super-admin password>
+//
+// -----------------------------------------------------------------------------
+//  C. Create the Jenkins job
+// -----------------------------------------------------------------------------
+//   New Item → name: reunion-deploy → Pipeline → OK
+//     Pipeline
+//       Definition:  Pipeline script from SCM
+//       SCM:         Git
+//       Repository URL: https://github.com/MasumCse2k12/reunion-web.git
+//       Credentials:    masum-git
+//       Branch:         */main
+//       Script Path:    Jenkinsfile.deploy
+//     Save → Build Now.
+//
+// -----------------------------------------------------------------------------
+//  D. Non-secret runtime values
+// -----------------------------------------------------------------------------
+//   Override any `environment` value below to match your server:
+//     DB_URL          — JDBC URL of your Postgres instance
+//     REDIS_HOST/PORT — where Redis is running
+//     CORS_ORIGINS    — comma-separated allowed origins
+//     MINIO_*         — your MinIO / S3 endpoint and bucket
+//     VITE_API_BASE_URL — public API URL baked into the web build at image time
+// =============================================================================
+
+pipeline {
+    agent any
+
+    environment {
+        // ── Web (React / Vite) ────────────────────────────────────────────────
+        WEB_IMAGE     = "reunion-web"
+        WEB_CONTAINER = "reunion-web"
+        // Host port → container port 80 (nginx). Change the left side only.
+        WEB_PORT      = "4112"
+
+        // ── API (Spring Boot) ─────────────────────────────────────────────────
+        API_IMAGE     = "reunion-api"
+        API_CONTAINER = "reunion-api"
+        // Host port → container port 8090 (Spring Boot). Change the left side only.
+        API_PORT      = "8090"
+
+        // ── Production API URL — baked into the web image at build time ───────
+        // Vite embeds this at compile time; changing it requires a new image build.
+        VITE_API_BASE_URL = "https://alumni.sammalani.edu.bd/smbc"
+
+        // ── Non-secret API runtime config ─────────────────────────────────────
+        // Secrets (JWT_SECRET, DB_PASSWORD, …) are injected via withCredentials.
+        DB_URL                = "jdbc:postgresql://localhost:5432/alumni"
+        DB_USER               = "alumni"
+        REDIS_HOST            = "localhost"
+        REDIS_PORT            = "6379"
+        CORS_ORIGINS          = "https://alumni.sammalani.edu.bd"
+        MINIO_ENDPOINT        = "http://localhost:9000"
+        MINIO_ACCESS_KEY      = "minioadmin"
+        MINIO_BUCKET          = "alumni-photos"
+        MINIO_PUBLIC_BASE_URL = "https://alumni.sammalani.edu.bd/photos"
+        LOG_LEVEL             = "INFO"
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                git branch: 'main',
+                    credentialsId: 'masum-git',
+                    url: 'https://github.com/MasumCse2k12/reunion-web.git'
+            }
+        }
+
+        // Build both images in parallel — they share nothing, so there is no
+        // reason to wait for one before starting the other.
+        stage('Build Images') {
+            parallel {
+
+                stage('Build Web Image') {
+                    steps {
+                        // Vite bakes VITE_API_BASE_URL into the JS bundle at build
+                        // time, so it must be present before `docker build` runs.
+                        // Writing .env.production here (not committed to git) lets
+                        // the Dockerfile pick it up via `COPY . .` without any
+                        // ARG/ENV changes to the Dockerfile itself.
+                        sh 'printf "VITE_API_BASE_URL=%s\\n" "$VITE_API_BASE_URL" > web/.env.production'
+                        dir('web') {
+                            sh 'docker build -t ${WEB_IMAGE}:latest .'
+                        }
+                    }
+                }
+
+                stage('Build API Image') {
+                    steps {
+                        dir('server') {
+                            sh 'docker build -t ${API_IMAGE}:latest .'
+                        }
+                    }
+                }
+            }
+        }
+
+        // API first — the web app calls it at runtime, so it should be up
+        // (or at least starting) before the web container is swapped in.
+        stage('Deploy API') {
+            steps {
+                sh '''
+                    docker stop ${API_CONTAINER} || true
+                    docker rm   ${API_CONTAINER} || true
+                '''
+                withCredentials([
+                    string(credentialsId: 'reunion-jwt-secret',           variable: 'JWT_SECRET'),
+                    string(credentialsId: 'reunion-db-password',          variable: 'DB_PASSWORD'),
+                    string(credentialsId: 'reunion-minio-secret-key',     variable: 'MINIO_SECRET_KEY'),
+                    string(credentialsId: 'reunion-bootstrap-admin-pass', variable: 'BOOTSTRAP_ADMIN_PASSWORD')
+                ]) {
+                    sh '''
+                        docker run -d \
+                            --name    ${API_CONTAINER} \
+                            --restart unless-stopped \
+                            -p ${API_PORT}:8090 \
+                            -e JWT_SECRET="$JWT_SECRET" \
+                            -e DB_URL="${DB_URL}" \
+                            -e DB_USER="${DB_USER}" \
+                            -e DB_PASSWORD="$DB_PASSWORD" \
+                            -e REDIS_HOST="${REDIS_HOST}" \
+                            -e REDIS_PORT="${REDIS_PORT}" \
+                            -e CORS_ORIGINS="${CORS_ORIGINS}" \
+                            -e MINIO_ENDPOINT="${MINIO_ENDPOINT}" \
+                            -e MINIO_ACCESS_KEY="${MINIO_ACCESS_KEY}" \
+                            -e MINIO_SECRET_KEY="$MINIO_SECRET_KEY" \
+                            -e MINIO_BUCKET="${MINIO_BUCKET}" \
+                            -e MINIO_PUBLIC_BASE_URL="${MINIO_PUBLIC_BASE_URL}" \
+                            -e BOOTSTRAP_ADMIN_PASSWORD="$BOOTSTRAP_ADMIN_PASSWORD" \
+                            -e LOG_LEVEL="${LOG_LEVEL}" \
+                            ${API_IMAGE}:latest
+                    '''
+                }
+            }
+        }
+
+        stage('Deploy Web') {
+            steps {
+                sh '''
+                    docker stop ${WEB_CONTAINER} || true
+                    docker rm   ${WEB_CONTAINER} || true
+
+                    docker run -d \
+                        --name    ${WEB_CONTAINER} \
+                        --restart unless-stopped \
+                        -p ${WEB_PORT}:80 \
+                        ${WEB_IMAGE}:latest
+                '''
+            }
+        }
+
+        stage('Verify') {
+            steps {
+                sh '''
+                    docker ps
+                    echo "--- API logs ---"
+                    docker logs --tail 50 ${API_CONTAINER}
+                    echo "--- Web logs ---"
+                    docker logs --tail 50 ${WEB_CONTAINER}
+                '''
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Deployment successful — web :${WEB_PORT}  API :${API_PORT}'
+        }
+        failure {
+            echo 'Deployment failed — see stage logs above'
+        }
+    }
+}

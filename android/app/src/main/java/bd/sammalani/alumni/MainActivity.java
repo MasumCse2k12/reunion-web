@@ -9,11 +9,17 @@ import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.NetworkInfo;
+import android.net.NetworkRequest;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.SystemClock;
 import android.provider.MediaStore;
 import android.view.View;
+import android.view.animation.DecelerateInterpolator;
+import android.view.animation.OvershootInterpolator;
 import android.webkit.CookieManager;
 import android.webkit.PermissionRequest;
 import android.webkit.ValueCallback;
@@ -36,6 +42,8 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -52,6 +60,7 @@ import java.util.Locale;
  *   <li>Back-navigation that follows web history before exiting</li>
  *   <li>Offline detection with a bilingual error page</li>
  *   <li>Pull-to-refresh</li>
+ *   <li>Grand Reunion 2027 animated loading overlay</li>
  * </ul>
  */
 public class MainActivity extends AppCompatActivity {
@@ -59,11 +68,11 @@ public class MainActivity extends AppCompatActivity {
     private static final int REQ_FILE_CHOOSER = 1001;
     private static final int REQ_CAMERA_PERM  = 1002;
 
-    // ── Views ──────────────────────────────────────────────────────────────
+    // ── Web views ──────────────────────────────────────────────────────────
 
-    private WebView           webView;
+    private WebView            webView;
     private SwipeRefreshLayout swipeRefresh;
-    private ProgressBar       progressBar;
+    private ProgressBar        progressBar;
 
     // ── File-chooser state ────────────────────────────────────────────────
 
@@ -81,6 +90,56 @@ public class MainActivity extends AppCompatActivity {
      * Resumed in onRequestPermissionsResult.
      */
     private ValueCallback<Uri[]> pendingCallback;
+
+    // ── Grand Reunion 2027 loading overlay ────────────────────────────────
+
+    private View splashOverlay;
+    private View emblemView;
+    private View topDivider;
+    private View schoolNameEn;
+    private View schoolNameBn;
+    private View grandReunionText;
+    private View year2027Text;
+    private View bottomDivider;
+    private View taglineText;
+    private View splashSpinner;
+
+    /** Wall-clock ms when the splash was first shown, used to enforce a minimum display time. */
+    private long    splashShownAt;
+    private boolean splashDismissed  = false;
+
+    /**
+     * Set to true the first time onPageFinished fires (whether success or error page).
+     * Used by the MAX_SPLASH_MS watchdog to decide whether to force-abort a hanging request.
+     */
+    private boolean webPageSettled   = false;
+
+    // ── Connectivity / server-retry state ─────────────────────────────────
+
+    /** True while the offline error page is displayed. */
+    private boolean isShowingOfflinePage      = false;
+    /** True while the server-unreachable error page is displayed. */
+    private boolean isShowingServerErrorPage  = false;
+
+    /** Registered when offline; fires when any network becomes available. */
+    private ConnectivityManager.NetworkCallback networkCallback;
+
+    /** Drives the periodic server-reachability ping shown during server errors. */
+    private final Handler  retryHandler       = new Handler(Looper.getMainLooper());
+    private       Runnable serverRetryRunnable;
+
+    /** How often to ping the server while the server-error page is visible. */
+    private static final long SERVER_RETRY_MS = 15_000;
+
+    /** Minimum time the splash is shown regardless of how fast the page loads. */
+    private static final long MIN_SPLASH_MS = 2600;
+
+    /**
+     * Hard upper bound. If onPageFinished has not fired by this point the request is
+     * likely hanging (server reachable on the network layer but not responding).
+     * We stop the load, show the appropriate error page, and dismiss the overlay.
+     */
+    private static final long MAX_SPLASH_MS = 7000;
 
     // ══════════════════════════════════════════════════════════════════════
     // Lifecycle
@@ -100,6 +159,10 @@ public class MainActivity extends AppCompatActivity {
         setupWebView();
         setupSwipeRefresh();
         setupBackHandler();
+
+        // isRestore = true on configuration changes (rotation, etc.) —
+        // skip the splash in that case since the WebView state is already loaded.
+        setupSplash(savedInstanceState != null);
 
         if (savedInstanceState != null) {
             // Restore scroll position and history across configuration changes.
@@ -130,6 +193,8 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
+        stopServerRetry();
+        unregisterNetworkCallback();
         webView.stopLoading();
         webView.destroy();        // release native resources
         super.onDestroy();
@@ -170,6 +235,11 @@ public class MainActivity extends AppCompatActivity {
 
         // Media — allow autoplay for any future notification sounds etc.
         s.setMediaPlaybackRequiresUserGesture(false);
+
+        // Background — must be set explicitly; the default is black on some devices
+        // which causes a black flash when the loading overlay fades out before
+        // the first WebView frame is painted.
+        webView.setBackgroundColor(ContextCompat.getColor(this, R.color.paper));
 
         // Cookies
         CookieManager.getInstance().setAcceptCookie(true);
@@ -216,6 +286,12 @@ public class MainActivity extends AppCompatActivity {
     // ══════════════════════════════════════════════════════════════════════
 
     private void loadApp() {
+        // Clear any active error state and stop background recovery mechanisms.
+        isShowingOfflinePage     = false;
+        isShowingServerErrorPage = false;
+        stopServerRetry();
+        unregisterNetworkCallback();
+
         if (isNetworkAvailable()) {
             webView.loadUrl(BuildConfig.WEB_APP_URL);
         } else {
@@ -224,10 +300,23 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showOfflinePage() {
-        // loadDataWithBaseURL lets relative asset paths and localStorage work
-        // even on the error page.
+        isShowingOfflinePage     = true;
+        isShowingServerErrorPage = false;
+        stopServerRetry();
         webView.loadDataWithBaseURL(
                 BuildConfig.WEB_APP_URL, OFFLINE_HTML, "text/html", "UTF-8", null);
+        // Watch for connectivity to return so we can auto-reload.
+        registerNetworkCallback();
+    }
+
+    private void showServerErrorPage() {
+        isShowingServerErrorPage = true;
+        isShowingOfflinePage     = false;
+        unregisterNetworkCallback();
+        webView.loadDataWithBaseURL(
+                BuildConfig.WEB_APP_URL, SERVER_ERROR_HTML, "text/html", "UTF-8", null);
+        // Ping the server periodically and reload as soon as it responds.
+        startServerRetry();
     }
 
     @SuppressWarnings("deprecation")
@@ -246,6 +335,306 @@ public class MainActivity extends AppCompatActivity {
             NetworkInfo info = cm.getActiveNetworkInfo();
             return info != null && info.isConnected();
         }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // Connectivity recovery — offline auto-reconnect
+    // ══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Registers a {@link ConnectivityManager.NetworkCallback} that fires when any
+     * network with internet capability becomes available.  Called when we enter the
+     * offline-error state; triggers an automatic reload when connectivity returns.
+     */
+    private void registerNetworkCallback() {
+        if (networkCallback != null) return; // already registered
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+        if (cm == null) return;
+
+        networkCallback = new ConnectivityManager.NetworkCallback() {
+            @Override
+            public void onAvailable(Network network) {
+                // onAvailable runs on the ConnectivityThread — dispatch to UI thread.
+                runOnUiThread(() -> {
+                    if (isShowingOfflinePage) {
+                        loadApp();
+                    }
+                });
+            }
+        };
+
+        NetworkRequest req = new NetworkRequest.Builder()
+                .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                .build();
+        try {
+            cm.registerNetworkCallback(req, networkCallback);
+        } catch (Exception e) {
+            networkCallback = null; // registration failed; fall back to manual retry only
+        }
+    }
+
+    private void unregisterNetworkCallback() {
+        if (networkCallback == null) return;
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+        if (cm != null) {
+            try { cm.unregisterNetworkCallback(networkCallback); } catch (Exception ignored) {}
+        }
+        networkCallback = null;
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // Connectivity recovery — server periodic ping
+    // ══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Schedules a repeating HEAD request to the app URL every {@link #SERVER_RETRY_MS}
+     * milliseconds.  When the server responds with a non-5xx status the app is
+     * reloaded automatically.  Runs on a daemon thread so it does not block the UI.
+     */
+    private void startServerRetry() {
+        stopServerRetry(); // clear any previous runnable
+        serverRetryRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (!isShowingServerErrorPage) return;
+                pingServer();
+                retryHandler.postDelayed(this, SERVER_RETRY_MS);
+            }
+        };
+        retryHandler.postDelayed(serverRetryRunnable, SERVER_RETRY_MS);
+    }
+
+    private void stopServerRetry() {
+        if (serverRetryRunnable != null) {
+            retryHandler.removeCallbacks(serverRetryRunnable);
+            serverRetryRunnable = null;
+        }
+    }
+
+    /**
+     * Opens a short-timeout HEAD connection to {@link BuildConfig#WEB_APP_URL}.
+     * If the server replies (any non-5xx response) we reload the app on the UI thread.
+     */
+    private void pingServer() {
+        new Thread(() -> {
+            HttpURLConnection conn = null;
+            try {
+                conn = (HttpURLConnection) new URL(BuildConfig.WEB_APP_URL).openConnection();
+                conn.setRequestMethod("HEAD");
+                conn.setConnectTimeout(5_000);
+                conn.setReadTimeout(5_000);
+                conn.setInstanceFollowRedirects(true);
+                int code = conn.getResponseCode();
+                if (code < 500) {
+                    // Server is back — reload on the main thread.
+                    runOnUiThread(() -> {
+                        if (isShowingServerErrorPage) loadApp();
+                    });
+                }
+            } catch (Exception ignored) {
+                // Still unreachable — next attempt in SERVER_RETRY_MS.
+            } finally {
+                if (conn != null) conn.disconnect();
+            }
+        }).start();
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // Grand Reunion 2027 — loading overlay animation
+    // ══════════════════════════════════════════════════════════════════════
+
+    private void setupSplash(boolean isRestore) {
+        splashOverlay    = findViewById(R.id.splashOverlay);
+        emblemView       = findViewById(R.id.emblemView);
+        topDivider       = findViewById(R.id.topDivider);
+        schoolNameEn     = findViewById(R.id.schoolNameEn);
+        schoolNameBn     = findViewById(R.id.schoolNameBn);
+        grandReunionText = findViewById(R.id.grandReunionText);
+        year2027Text     = findViewById(R.id.year2027Text);
+        bottomDivider    = findViewById(R.id.bottomDivider);
+        taglineText      = findViewById(R.id.taglineText);
+        splashSpinner    = findViewById(R.id.splashSpinner);
+
+        if (isRestore) {
+            // Configuration change — WebView already has its content; skip the splash.
+            splashOverlay.setVisibility(View.GONE);
+            splashDismissed = true;
+            return;
+        }
+
+        splashShownAt = SystemClock.elapsedRealtime();
+        initSplashViews();
+        runSplashAnimation();
+
+        // Watchdog: if the page has not settled after MAX_SPLASH_MS the request
+        // is hanging (server unreachable / no response). Stop the load, show the
+        // right error page, and dismiss the overlay so the user is never stuck.
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            if (!webPageSettled) {
+                webView.stopLoading();
+                if (isNetworkAvailable()) {
+                    showServerErrorPage();
+                } else {
+                    showOfflinePage();
+                }
+            }
+            dismissSplash();
+        }, MAX_SPLASH_MS);
+    }
+
+    /** Set every animated view to its invisible starting state. */
+    private void initSplashViews() {
+        float slide = dp(28);
+
+        emblemView.setAlpha(0f);
+        emblemView.setScaleX(0.35f);
+        emblemView.setScaleY(0.35f);
+
+        topDivider.setAlpha(0f);
+        topDivider.setScaleX(0f);
+
+        schoolNameEn.setAlpha(0f);
+        schoolNameEn.setTranslationY(slide);
+
+        schoolNameBn.setAlpha(0f);
+        schoolNameBn.setTranslationY(slide);
+
+        bottomDivider.setAlpha(0f);
+        bottomDivider.setScaleX(0f);
+
+        grandReunionText.setAlpha(0f);
+        grandReunionText.setTranslationY(dp(20));
+
+        year2027Text.setAlpha(0f);
+        year2027Text.setScaleX(0.55f);
+        year2027Text.setScaleY(0.55f);
+
+        taglineText.setAlpha(0f);
+        taglineText.setTranslationY(dp(16));
+
+        splashSpinner.setAlpha(0f);
+    }
+
+    /**
+     * Runs the staggered entrance animation sequence.
+     *
+     * Timeline (approximate):
+     *   0 ms  — emblem scales in with overshoot
+     * 320 ms  — top gold divider expands
+     * 480 ms  — school name (EN) slides up
+     * 580 ms  — school name (BN) slides up
+     * 720 ms  — bottom divider expands
+     * 840 ms  — "GRAND REUNION" slides up
+     * 1050 ms — "2027" scales in with overshoot
+     * 1350 ms — tagline fades in
+     * 1500 ms — spinner appears
+     * 1900 ms — "2027" starts pulsing (repeating scale breathe)
+     */
+    private void runSplashAnimation() {
+        Handler h = new Handler(Looper.getMainLooper());
+
+        // Emblem: scale-in with overshoot bounce
+        emblemView.animate()
+                .alpha(1f).scaleX(1f).scaleY(1f)
+                .setDuration(520)
+                .setInterpolator(new OvershootInterpolator(1.6f))
+                .start();
+
+        // Top divider: horizontal expand
+        h.postDelayed(() ->
+                topDivider.animate()
+                        .alpha(1f).scaleX(1f)
+                        .setDuration(380)
+                        .setInterpolator(new DecelerateInterpolator())
+                        .start(),
+                320);
+
+        // School name (EN)
+        h.postDelayed(() -> slideUp(schoolNameEn, 360), 480);
+
+        // School name (BN)
+        h.postDelayed(() -> slideUp(schoolNameBn, 360), 580);
+
+        // Bottom divider
+        h.postDelayed(() ->
+                bottomDivider.animate()
+                        .alpha(0.6f).scaleX(1f)
+                        .setDuration(360)
+                        .setInterpolator(new DecelerateInterpolator())
+                        .start(),
+                720);
+
+        // "GRAND REUNION"
+        h.postDelayed(() -> slideUp(grandReunionText, 400), 840);
+
+        // "2027": scale-in with overshoot — the hero element
+        h.postDelayed(() ->
+                year2027Text.animate()
+                        .alpha(1f).scaleX(1f).scaleY(1f)
+                        .setDuration(560)
+                        .setInterpolator(new OvershootInterpolator(1.4f))
+                        .start(),
+                1050);
+
+        // Tagline
+        h.postDelayed(() -> slideUp(taglineText, 380), 1350);
+
+        // Spinner
+        h.postDelayed(() ->
+                splashSpinner.animate()
+                        .alpha(1f)
+                        .setDuration(400)
+                        .start(),
+                1500);
+
+        // Start the pulsing breathe on "2027" after the entrance finishes
+        h.postDelayed(() -> startPulse(year2027Text), 1900);
+    }
+
+    /** Fade-in + translate-up helper. */
+    private void slideUp(View v, long duration) {
+        v.animate()
+                .alpha(1f).translationY(0f)
+                .setDuration(duration)
+                .setInterpolator(new DecelerateInterpolator())
+                .start();
+    }
+
+    /**
+     * Gentle repeating scale "breathe" on the year number while loading.
+     * Stops automatically once the splash is dismissed.
+     */
+    private void startPulse(View v) {
+        if (splashDismissed) return;
+        v.animate()
+                .scaleX(1.07f).scaleY(1.07f)
+                .setDuration(950)
+                .setInterpolator(new DecelerateInterpolator())
+                .withEndAction(() -> {
+                    if (splashDismissed) return;
+                    v.animate()
+                            .scaleX(1f).scaleY(1f)
+                            .setDuration(950)
+                            .setInterpolator(new DecelerateInterpolator())
+                            .withEndAction(() -> startPulse(v))
+                            .start();
+                })
+                .start();
+    }
+
+    /** Fades out and removes the overlay. Called once the first page finishes loading. */
+    private void dismissSplash() {
+        if (splashDismissed) return;
+        splashDismissed = true;
+        splashOverlay.animate()
+                .alpha(0f)
+                .setDuration(650)
+                .withEndAction(() -> splashOverlay.setVisibility(View.GONE))
+                .start();
+    }
+
+    private float dp(int dp) {
+        return dp * getResources().getDisplayMetrics().density;
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -399,15 +788,26 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onPageFinished(WebView view, String url) {
             super.onPageFinished(view, url);
+            webPageSettled = true;
             swipeRefresh.setRefreshing(false);
             CookieManager.getInstance().flush();
+
+            // Dismiss the loading overlay, but honour the minimum display time
+            // so the animation always completes gracefully.
+            long elapsed = SystemClock.elapsedRealtime() - splashShownAt;
+            long delay   = Math.max(0, MIN_SPLASH_MS - elapsed);
+            new Handler(Looper.getMainLooper())
+                    .postDelayed(MainActivity.this::dismissSplash, delay);
         }
 
         /** API 23+ error handler. */
         @Override
         public void onReceivedError(WebView view, WebResourceRequest request,
                                     WebResourceError error) {
-            if (request.isForMainFrame()) {
+            if (!request.isForMainFrame()) return;
+            if (isNetworkAvailable()) {
+                showServerErrorPage();
+            } else {
                 showOfflinePage();
             }
         }
@@ -417,7 +817,11 @@ public class MainActivity extends AppCompatActivity {
         @SuppressWarnings("deprecation")
         public void onReceivedError(WebView view, int errorCode,
                                     String description, String failingUrl) {
-            showOfflinePage();
+            if (isNetworkAvailable()) {
+                showServerErrorPage();
+            } else {
+                showOfflinePage();
+            }
         }
     }
 
@@ -469,7 +873,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     // ══════════════════════════════════════════════════════════════════════
-    // Offline error page (bilingual — English + Bengali)
+    // Error pages (bilingual — English + Bengali)
     // ══════════════════════════════════════════════════════════════════════
 
     private static final String OFFLINE_HTML =
@@ -496,5 +900,36 @@ public class MainActivity extends AppCompatActivity {
         "<p>Please check your network and try again.<br>" +
         "নেটওয়ার্ক পরীক্ষা করে আবার চেষ্টা করুন।</p>" +
         "<button onclick='window.location.href=\"" + BuildConfig.WEB_APP_URL + "\"'>Try Again &nbsp;·&nbsp; আবার চেষ্টা করুন</button>" +
+        "</body></html>";
+
+    /** Shown when the device has internet but the app server cannot be reached. */
+    private static final String SERVER_ERROR_HTML =
+        "<!DOCTYPE html><html><head>" +
+        "<meta charset='UTF-8'>" +
+        "<meta name='viewport' content='width=device-width,initial-scale=1,viewport-fit=cover'>" +
+        "<style>" +
+        "*{box-sizing:border-box;margin:0;padding:0}" +
+        "body{font-family:sans-serif;background:#faf8f4;color:#334155;" +
+        "display:flex;flex-direction:column;align-items:center;" +
+        "justify-content:center;min-height:100vh;padding:32px;text-align:center}" +
+        ".icon{font-size:72px;margin-bottom:20px}" +
+        "h1{font-size:20px;font-weight:800;margin-bottom:6px;color:#1e293b}" +
+        ".bn{font-size:17px;color:#475569;margin-bottom:6px}" +
+        "p{font-size:14px;color:#64748b;margin-bottom:28px;line-height:1.6}" +
+        "button{padding:14px 36px;background:#1f6b4a;color:#fff;border:none;" +
+        "border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;" +
+        "width:100%;max-width:280px}" +
+        "button:active{opacity:.85}" +
+        ".hint{margin-top:20px;font-size:12px;color:#94a3b8}" +
+        "</style></head><body>" +
+        "<div class='icon'>🖥️</div>" +
+        "<h1>Server Unreachable</h1>" +
+        "<div class='bn'>সার্ভার পাওয়া যাচ্ছে না</div>" +
+        "<p>Your internet is working, but the Sammalani Alumni server could not be reached. " +
+        "It may be temporarily down.<br><br>" +
+        "আপনার ইন্টারনেট সংযোগ আছে, কিন্তু সার্ভারে পৌঁছানো যাচ্ছে না। " +
+        "সার্ভারটি সাময়িকভাবে বন্ধ থাকতে পারে।</p>" +
+        "<button onclick='window.location.href=\"" + BuildConfig.WEB_APP_URL + "\"'>Try Again &nbsp;·&nbsp; আবার চেষ্টা করুন</button>" +
+        "<div class='hint'>" + BuildConfig.WEB_APP_URL + "</div>" +
         "</body></html>";
 }

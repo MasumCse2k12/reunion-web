@@ -1,38 +1,254 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Root is SwipeRefreshLayout so pull-to-refresh works on any screen.
-    ProgressBar sits on top of the WebView and is hidden once the page loads.
+    Root is a FrameLayout so the Grand Reunion 2027 splash overlay can be
+    drawn on top of the web content while it loads.
 -->
-<androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/swipeRefresh"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@color/paper">
 
-    <FrameLayout
+    <!-- ── Web content (SwipeRefreshLayout + WebView + progress bar) ── -->
+
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipeRefresh"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <WebView
-            android:id="@+id/webView"
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent" />
+            android:layout_height="match_parent">
 
-        <!--
-            Thin 3dp progress bar anchored to the top edge — mimics Chrome's
-            page-load indicator. Visibility toggled by AppWebChromeClient.
-        -->
+            <WebView
+                android:id="@+id/webView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+            <!--
+                Thin 3dp progress bar anchored to the top edge — mimics Chrome's
+                page-load indicator. Visibility toggled by AppWebChromeClient.
+            -->
+            <ProgressBar
+                android:id="@+id/progressBar"
+                style="@android:style/Widget.Material.ProgressBar.Horizontal"
+                android:layout_width="match_parent"
+                android:layout_height="3dp"
+                android:layout_gravity="top"
+                android:max="100"
+                android:progressTint="@color/brand_600"
+                android:progressBackgroundTint="@color/brand_100"
+                android:visibility="gone" />
+
+        </FrameLayout>
+
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         Grand Reunion 2027 — loading overlay
+         Drawn on top of the WebView; fades out once the first page loads.
+         ══════════════════════════════════════════════════════════════════ -->
+
+    <FrameLayout
+        android:id="@+id/splashOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/brand_600">
+
+        <!-- ── Decorative background sparkles (static, gold) ── -->
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|start"
+            android:layout_marginStart="28dp"
+            android:layout_marginTop="52dp"
+            android:alpha="0.30"
+            android:text="✦"
+            android:textColor="@color/gold"
+            android:textSize="24sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|end"
+            android:layout_marginEnd="40dp"
+            android:layout_marginTop="88dp"
+            android:alpha="0.20"
+            android:text="✴"
+            android:textColor="@color/gold"
+            android:textSize="18sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|end"
+            android:layout_marginEnd="100dp"
+            android:layout_marginTop="140dp"
+            android:alpha="0.15"
+            android:text="✦"
+            android:textColor="@color/gold_light"
+            android:textSize="12sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical|start"
+            android:layout_marginStart="16dp"
+            android:alpha="0.18"
+            android:text="✦"
+            android:textColor="@color/gold"
+            android:textSize="16sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical|end"
+            android:layout_marginEnd="20dp"
+            android:layout_marginTop="80dp"
+            android:alpha="0.22"
+            android:text="✴"
+            android:textColor="@color/gold"
+            android:textSize="20sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|start"
+            android:layout_marginStart="52dp"
+            android:layout_marginBottom="96dp"
+            android:alpha="0.25"
+            android:text="✴"
+            android:textColor="@color/gold"
+            android:textSize="22sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_marginEnd="36dp"
+            android:layout_marginBottom="60dp"
+            android:alpha="0.28"
+            android:text="✦"
+            android:textColor="@color/gold"
+            android:textSize="28sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|start"
+            android:layout_marginStart="120dp"
+            android:layout_marginBottom="130dp"
+            android:alpha="0.15"
+            android:text="✦"
+            android:textColor="@color/gold_light"
+            android:textSize="14sp" />
+
+        <!-- ── Main centred content ── -->
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:paddingHorizontal="40dp">
+
+            <!-- Crest emblem -->
+            <ImageView
+                android:id="@+id/emblemView"
+                android:layout_width="108dp"
+                android:layout_height="108dp"
+                android:contentDescription="@null"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_reunion_emblem" />
+
+            <!-- Gold divider below emblem -->
+            <View
+                android:id="@+id/topDivider"
+                android:layout_width="180dp"
+                android:layout_height="1dp"
+                android:layout_marginTop="20dp"
+                android:background="@color/gold" />
+
+            <!-- School name — English -->
+            <TextView
+                android:id="@+id/schoolNameEn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:fontFamily="sans-serif-medium"
+                android:letterSpacing="0.12"
+                android:text="@string/splash_school_en"
+                android:textColor="#ccffffff"
+                android:textSize="11sp" />
+
+            <!-- School name — Bengali -->
+            <TextView
+                android:id="@+id/schoolNameBn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="@string/splash_school_bn"
+                android:textColor="#99ffffff"
+                android:textSize="13sp" />
+
+            <!-- Gold spacer before hero text -->
+            <View
+                android:id="@+id/bottomDivider"
+                android:layout_width="120dp"
+                android:layout_height="1dp"
+                android:layout_marginTop="20dp"
+                android:background="@color/gold"
+                android:alpha="0.6" />
+
+            <!-- "GRAND REUNION" -->
+            <TextView
+                android:id="@+id/grandReunionText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:fontFamily="sans-serif-medium"
+                android:letterSpacing="0.18"
+                android:text="@string/splash_event"
+                android:textColor="@color/gold"
+                android:textSize="22sp" />
+
+            <!-- "2027" — hero number, pulses while loading -->
+            <TextView
+                android:id="@+id/year2027Text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-black"
+                android:includeFontPadding="false"
+                android:letterSpacing="0.05"
+                android:lineSpacingExtra="-4dp"
+                android:text="@string/splash_year"
+                android:textColor="@color/white"
+                android:textSize="88sp" />
+
+            <!-- Tagline -->
+            <TextView
+                android:id="@+id/taglineText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:letterSpacing="0.06"
+                android:text="@string/splash_tagline"
+                android:textColor="#80ffffff"
+                android:textSize="13sp" />
+
+        </LinearLayout>
+
+        <!-- Indeterminate spinner anchored near the bottom -->
         <ProgressBar
-            android:id="@+id/progressBar"
-            style="@android:style/Widget.Material.ProgressBar.Horizontal"
-            android:layout_width="match_parent"
-            android:layout_height="3dp"
-            android:layout_gravity="top"
-            android:max="100"
-            android:progressTint="@color/brand_600"
-            android:progressBackgroundTint="@color/brand_100"
-            android:visibility="gone" />
+            android:id="@+id/splashSpinner"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_gravity="bottom|center_horizontal"
+            android:layout_marginBottom="64dp"
+            android:indeterminate="true"
+            android:indeterminateTint="@color/white" />
 
     </FrameLayout>
 
-</androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+</FrameLayout>
