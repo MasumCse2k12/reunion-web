@@ -1,18 +1,23 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Search, TrendingUp } from 'lucide-react'
-import { BATCHES } from '../lib/api'
+import { api, type Batch } from '../lib/api'
 import { useApp } from '../lib/store'
 import { Badge, Card, Input, cx } from '../components/ui'
 
 export default function Batches() {
   const { t, n, yr, lang, user } = useApp()
   const [q, setQ] = useState('')
+  const [batches, setBatches] = useState<Batch[]>([])
+
+  useEffect(() => {
+    api.batches().then(setBatches)
+  }, [])
 
   const list = useMemo(() => {
     const s = q.replace(/\D/g, '')
-    return s ? BATCHES.filter((b) => String(b.year).includes(s)) : BATCHES
-  }, [q])
+    return s ? batches.filter((b) => String(b.year).includes(s)) : batches
+  }, [batches, q])
 
   return (
     <div className="space-y-5">

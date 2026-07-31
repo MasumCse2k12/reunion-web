@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { CalendarRange, Check, CheckCircle2, KeyRound, Search, UserPlus } from 'lucide-react'
-import { api, ApiError, DEMO_OTP, type Person } from '../lib/api'
+import { api, ApiError, type Person } from '../lib/api'
 import { SCHOOL } from '../mock/data'
 import { useApp } from '../lib/store'
 import AuthShell from '../components/AuthShell'
@@ -23,6 +23,8 @@ export default function Signup() {
   const [phone, setPhone] = useState('')
   const [otp, setOtp] = useState('')
   const [otpSent, setOtpSent] = useState(false)
+  const [challengeId, setChallengeId] = useState('')
+  const [devCode, setDevCode] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const listRef = useRef<HTMLDivElement>(null)
@@ -74,7 +76,11 @@ export default function Signup() {
     setError('')
     setBusy(true)
     try {
-      await api.requestOtp(phone)
+      const res = picked
+        ? await api.claimProfile(picked.id, phone, yearNum)
+        : await api.registerNew(manualName, manualName, yearNum, phone)
+      setChallengeId(res.challengeId)
+      setDevCode(res.hint)
       setOtpSent(true)
     } catch (e) {
       showError(e)
@@ -85,16 +91,9 @@ export default function Signup() {
 
   async function finish() {
     setError('')
-    if (otp.replace(/\D/g, '') !== DEMO_OTP) {
-      setError(lang === 'bn' ? 'কোডটি সঠিক নয়' : 'That code is not correct')
-      return
-    }
     setBusy(true)
     try {
-      const person = await api.completeClaim(
-        picked ?? { name: manualName, nameBn: manualName, batchYear: yearNum },
-        phone,
-      )
+      const { person } = await api.verifyOtp(challengeId, otp.replace(/\D/g, ''))
       setUser(person)
       setStep('done')
     } catch (e) {
@@ -330,13 +329,15 @@ export default function Signup() {
                     className="text-center text-2xl font-bold tracking-[0.5em] tabular-nums"
                   />
                 </Field>
-                <div className="rounded-xl bg-gold-50 px-4 py-3 text-center text-sm text-gold-700 ring-1 ring-gold-200">
-                  <KeyRound className="mr-1 inline size-4" />
-                  {lang === 'bn' ? 'ডেমো কোড' : 'Demo code'}:{' '}
-                  <button onClick={() => setOtp(DEMO_OTP)} className="min-h-0 font-extrabold underline underline-offset-4">
-                    {DEMO_OTP}
-                  </button>
-                </div>
+                {devCode && (
+                  <div className="rounded-xl bg-gold-50 px-4 py-3 text-center text-sm text-gold-700 ring-1 ring-gold-200">
+                    <KeyRound className="mr-1 inline size-4" />
+                    {lang === 'bn' ? 'ডেমো কোড' : 'Demo code'}:{' '}
+                    <button onClick={() => setOtp(devCode)} className="min-h-0 font-extrabold underline underline-offset-4">
+                      {devCode}
+                    </button>
+                  </div>
+                )}
                 <Button full size="lg" loading={busy} onClick={finish}>
                   {t('cta.continue')}
                 </Button>

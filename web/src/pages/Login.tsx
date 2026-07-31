@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { KeyRound, MessageSquare, Smartphone, Zap } from 'lucide-react'
-import { api, ApiError, DEMO_OTP } from '../lib/api'
+import { api, ApiError } from '../lib/api'
 import { useApp } from '../lib/store'
 import AuthShell from '../components/AuthShell'
 import { Button, Card, Field, Input } from '../components/ui'
@@ -13,6 +13,7 @@ export default function Login() {
   const [step, setStep] = useState<'phone' | 'otp'>('phone')
   const [phone, setPhone] = useState('')
   const [challengeId, setChallengeId] = useState('')
+  const [devCode, setDevCode] = useState('')
   const [code, setCode] = useState(['', '', '', '', '', ''])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -29,6 +30,7 @@ export default function Login() {
     try {
       const res = await api.requestOtp(phone)
       setChallengeId(res.challengeId)
+      setDevCode(res.hint)
       setStep('otp')
       setTimeout(() => boxes.current[0]?.focus(), 50)
     } catch (e) {
@@ -56,9 +58,15 @@ export default function Login() {
 
   async function demoLogin() {
     setBusy(true)
-    const { person } = await api.demoLogin()
-    setUser(person)
-    navigate('/app')
+    try {
+      const { person } = await api.demoLogin()
+      setUser(person)
+      navigate('/app')
+    } catch (e) {
+      showError(e)
+    } finally {
+      setBusy(false)
+    }
   }
 
   function onDigit(i: number, v: string) {
@@ -147,19 +155,21 @@ export default function Login() {
 
             {error && <p className="mt-3 text-center font-medium text-red-600">{error}</p>}
 
-            {/* Demo affordance — in production the code arrives by SMS */}
-            <div className="mt-4 rounded-xl bg-gold-50 px-4 py-3 text-center text-sm text-gold-700 ring-1 ring-gold-200">
-              {lang === 'bn' ? 'ডেমো কোড' : 'Demo code'}:{' '}
-              <button
-                onClick={() => {
-                  setCode(DEMO_OTP.split(''))
-                  verify(DEMO_OTP)
-                }}
-                className="min-h-0 font-extrabold tracking-widest underline underline-offset-4"
-              >
-                {DEMO_OTP}
-              </button>
-            </div>
+            {/* Dev affordance — devCode is only present on local/staging builds */}
+            {devCode && (
+              <div className="mt-4 rounded-xl bg-gold-50 px-4 py-3 text-center text-sm text-gold-700 ring-1 ring-gold-200">
+                {lang === 'bn' ? 'ডেমো কোড' : 'Demo code'}:{' '}
+                <button
+                  onClick={() => {
+                    setCode(devCode.split(''))
+                    verify(devCode)
+                  }}
+                  className="min-h-0 font-extrabold tracking-widest underline underline-offset-4"
+                >
+                  {devCode}
+                </button>
+              </div>
+            )}
 
             <Button full size="lg" className="mt-4" loading={busy} onClick={() => verify()}>
               {t('auth.verify')}

@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ArrowRight, CalendarDays, MapPin, Phone, Search, Sparkles } from 'lucide-react'
 import { useApp } from '../lib/store'
-import { BATCHES, EVENT, TOTALS } from '../lib/api'
-import { NOTICES, SCHOOL, TEACHERS } from '../mock/data'
+import { api, EVENT, type Batch, type Notice } from '../lib/api'
+import { SCHOOL, TEACHERS } from '../mock/data'
 import { Badge, Button, Card, SectionTitle, Stat, cx } from '../components/ui'
 import { DemoBanner, LangToggle, SchoolMark } from '../components/Layout'
 
@@ -27,7 +27,17 @@ export default function Landing() {
   const navigate = useNavigate()
   const cd = useCountdown(EVENT.date)
 
-  const pct = Math.round((TOTALS.claimed / TOTALS.roster) * 100)
+  const [batches, setBatches] = useState<Batch[]>([])
+  const [totals, setTotals] = useState({ roster: 0, claimed: 0, batches: 0 })
+  const [notices, setNotices] = useState<Notice[]>([])
+
+  useEffect(() => {
+    api.batches().then(setBatches)
+    api.totals().then(setTotals)
+    api.notices().then(setNotices)
+  }, [])
+
+  const pct = totals.roster > 0 ? Math.round((totals.claimed / totals.roster) * 100) : 0
 
   const eventDate = useMemo(
     () =>
@@ -124,10 +134,10 @@ export default function Landing() {
 
           {/* Stats */}
           <div className="mx-auto mt-12 grid max-w-3xl grid-cols-2 gap-6 border-t border-white/10 pt-8 sm:grid-cols-4">
-            <Stat value={n(TOTALS.claimed)} label={t('landing.foundSoFar')} tone="gold" />
-            <Stat value={n(TOTALS.registeredForEvent)} label={t('landing.registered')} />
-            <Stat value={n(TOTALS.batches)} label={t('landing.batches')} />
-            <Stat value={n(TOTALS.teachers)} label={t('landing.teachers')} />
+            <Stat value={n(totals.claimed)} label={t('landing.foundSoFar')} tone="gold" />
+            <Stat value={n(0)} label={t('landing.registered')} />
+            <Stat value={n(totals.batches)} label={t('landing.batches')} />
+            <Stat value={n(0)} label={t('landing.teachers')} />
           </div>
         </div>
       </header>
@@ -138,9 +148,9 @@ export default function Landing() {
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
               <div className="text-3xl font-extrabold text-brand-700">
-                {n(TOTALS.claimed)}{' '}
+                {n(totals.claimed)}{' '}
                 <span className="text-lg font-semibold text-ink-400">
-                  / {n(TOTALS.roster)} {t('landing.ofTotal')}
+                  / {n(totals.roster)} {t('landing.ofTotal')}
                 </span>
               </div>
               <p className="mt-1 text-ink-500">{t('landing.foundSoFar')}</p>
@@ -160,7 +170,7 @@ export default function Landing() {
           <SectionTitle>{t('landing.batchCoverage')}</SectionTitle>
           <p className="mb-4 text-ink-500">{t('landing.coverageNote')}</p>
           <div className="grid grid-cols-5 gap-1.5 sm:grid-cols-10 lg:grid-cols-12">
-            {BATCHES.map((b) => {
+            {batches.map((b) => {
               const ratio = b.claimedCount / b.rosterCount
               const shade =
                 ratio > 0.6
@@ -202,7 +212,7 @@ export default function Landing() {
           <div className="lg:col-span-2">
             <SectionTitle>{t('dash.notices')}</SectionTitle>
             <div className="space-y-3">
-              {NOTICES.map((notice) => (
+              {notices.map((notice) => (
                 <Card key={notice.id} className={cx(notice.pinned && 'border-gold-300 bg-gold-50/40')}>
                   <div className="flex items-start justify-between gap-3">
                     <h3 className="font-bold text-ink-900">{lang === 'bn' ? notice.titleBn : notice.titleEn}</h3>
