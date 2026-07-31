@@ -35,7 +35,7 @@ public class EventService {
      * meets, so it is cached by slug rather than fetched with its ticket rows
      * on each page load.
      */
-    @Cacheable(value = CacheConfig.EVENT_BY_SLUG, key = "#slug")
+    @Cacheable(value = CacheConfig.EVENT_BY_SLUG, key = "#a0")
     @Transactional(readOnly = true)
     public EventDto describe(String slug) {
         Event event = bySlug(slug);

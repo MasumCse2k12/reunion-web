@@ -13,7 +13,7 @@ public interface RegistrationRepository extends JpaRepository<Registration, UUID
     @EntityGraph(attributePaths = {"person", "event", "ticketType"})
     Optional<Registration> findByEventSlugAndPersonId(String eventSlug, UUID personId);
 
-    @EntityGraph(attributePaths = {"person", "event", "ticketType"})
+    @EntityGraph(attributePaths = {"person"})
     Optional<Registration> findWithDetailsById(UUID id);
 
     /** The money side of the overview: what has actually been confirmed, and what has not. */

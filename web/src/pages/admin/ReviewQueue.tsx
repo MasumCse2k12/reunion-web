@@ -220,8 +220,8 @@ export default function ReviewQueue({ mode }: { mode: Mode }) {
       <h1 className="text-2xl font-extrabold text-ink-900">{t(mode === 'MEMBER' ? 'admin.members' : 'admin.payments')}</h1>
 
       {/* ---------- Filters ---------- */}
-      <Card className="grid gap-3 sm:grid-cols-3">
-        <div className="relative sm:col-span-3 lg:col-span-1">
+      <Card className="grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="relative sm:col-span-2 lg:col-span-1">
           <Search className="pointer-events-none absolute left-3.5 top-1/2 size-5 -translate-y-1/2 text-ink-400" />
           <Input
             placeholder={t('admin.search')}
@@ -295,7 +295,7 @@ export default function ReviewQueue({ mode }: { mode: Mode }) {
               <Card
                 key={a.id}
                 className={cx(
-                  'flex flex-wrap items-center gap-1.5 p-3 transition',
+                  'flex items-center gap-1.5 p-3 transition',
                   picked && 'border-brand-300 bg-brand-50/60 ring-1 ring-brand-200',
                 )}
               >

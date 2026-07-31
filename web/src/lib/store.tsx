@@ -62,7 +62,6 @@ const DICT = {
     'auth.otpSub': 'আপনার মোবাইলে ৬ সংখ্যার কোড পাঠানো হয়েছে',
     'auth.verify': 'যাচাই করুন',
     'auth.resend': 'আবার কোড পাঠান',
-    'auth.demoSkip': 'ডেমো লগইন (কোড ছাড়া)',
     'auth.noAccount': 'প্রথমবার আসছেন?',
     'auth.needHelp': 'সাহায্য দরকার? কল করুন',
 
@@ -141,6 +140,7 @@ const DICT = {
     'pay.ROCKET': 'রকেট',
     'pay.BANK': 'ব্যাংক',
     'pay.CASH': 'নগদ টাকা',
+    'pay.OTHER': 'অন্যান্য',
 
     'batches.title': 'সকল ব্যাচ',
     'batches.sub': '১৯৬৮ থেকে ২০২৬ — মোট ৫৯টি ব্যাচ',
@@ -230,11 +230,8 @@ const DICT = {
     'admin.active': 'সক্রিয়',
     'admin.disabled': 'নিষ্ক্রিয়',
     'admin.superOnly': 'শুধু সুপার অ্যাডমিন এই পৃষ্ঠাটি দেখতে পারেন।',
-    'admin.demoCreds': 'ডেমো লগইন তথ্য',
     'admin.contact': 'মোবাইল',
 
-    'demo.banner': 'এটি একটি ডেমো — সব তথ্য কাল্পনিক',
-    'demo.reset': 'ডেমো রিসেট',
     'common.loading': 'একটু অপেক্ষা করুন…',
     'common.taka': '৳',
   },
@@ -293,7 +290,6 @@ const DICT = {
     'auth.otpSub': 'We sent a 6-digit code to your mobile',
     'auth.verify': 'Verify',
     'auth.resend': 'Send the code again',
-    'auth.demoSkip': 'Demo login (skip OTP)',
     'auth.noAccount': 'First time here?',
     'auth.needHelp': 'Need help? Call',
 
@@ -372,6 +368,7 @@ const DICT = {
     'pay.ROCKET': 'Rocket',
     'pay.BANK': 'Bank',
     'pay.CASH': 'Cash',
+    'pay.OTHER': 'Others',
 
     'batches.title': 'All batches',
     'batches.sub': '1968 to 2026 — 59 batches in total',
@@ -461,11 +458,8 @@ const DICT = {
     'admin.active': 'Active',
     'admin.disabled': 'Disabled',
     'admin.superOnly': 'Only a super admin can open this page.',
-    'admin.demoCreds': 'Demo sign-in details',
     'admin.contact': 'Mobile',
 
-    'demo.banner': 'This is a demo — all data is fictional',
-    'demo.reset': 'Reset demo',
     'common.loading': 'One moment…',
     'common.taka': '৳',
   },

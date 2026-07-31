@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { ArrowLeft, KeyRound, ShieldCheck } from 'lucide-react'
-import { ADMIN_USERS } from '../../mock/data'
 import { adminApi, ApiError } from '../../lib/api'
 import { useAdmin } from '../../lib/adminStore'
 import { useApp } from '../../lib/store'
@@ -89,33 +88,6 @@ export default function AdminLogin() {
           </Button>
         </Card>
 
-        {/* Demo affordance only. A real deployment ships no credentials to the browser. */}
-        <Card className="mt-6 border-white/10 bg-white/5">
-          <p className="mb-2 text-sm font-bold uppercase tracking-wide text-gold-300">{t('admin.demoCreds')}</p>
-          <ul className="space-y-1.5">
-            {ADMIN_USERS.map((a) => (
-              <li key={a.id}>
-                <button
-                  onClick={() => {
-                    setUsername(a.username)
-                    setPassword(a.password)
-                  }}
-                  className="flex w-full items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-left hover:bg-white/10"
-                >
-                  <span className="min-w-0">
-                    <span className="block truncate font-mono text-sm text-white">
-                      {a.username} / {a.password}
-                    </span>
-                    <span className="block truncate text-xs text-white/50">
-                      {t(`admin.role${a.role}` as never)}
-                      {a.role === 'GROUP_ADMIN' && ` · ${a.batches[0]}–${a.batches[a.batches.length - 1]}`}
-                    </span>
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </Card>
       </main>
     </div>
   )

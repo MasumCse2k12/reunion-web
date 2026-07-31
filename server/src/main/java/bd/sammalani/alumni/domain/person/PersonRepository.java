@@ -23,8 +23,9 @@ public interface PersonRepository extends JpaRepository<Person, UUID> {
             select p from Person p
             where p.batchYear = :batchYear
               and p.mergedIntoId is null
-              and (:q is null or lower(p.name) like lower(concat('%', :q, '%'))
-                              or lower(coalesce(p.nameBn, '')) like lower(concat('%', :q, '%')))
+              and (cast(:q as String) is null
+                   or lower(p.name) like lower(concat('%', cast(:q as String), '%'))
+                   or lower(coalesce(p.nameBn, '')) like lower(concat('%', cast(:q as String), '%')))
             order by p.name
             """)
     List<Person> searchInBatch(@Param("batchYear") int batchYear, @Param("q") String q, Limit limit);

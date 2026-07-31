@@ -46,7 +46,7 @@ public class BatchController {
      */
     @GetMapping("/{year}/members")
     @Operation(summary = "Who is on a batch (masked)")
-    public List<PersonDto> members(@PathVariable int year, @RequestParam(required = false) String q) {
+    public List<PersonDto> members(@PathVariable("year") int year, @RequestParam(required = false, name = "q") String q) {
         return people.searchInBatch(year, q, Limit.of(MAX_MEMBERS)).stream()
                 .map(PersonDto::masked)
                 .toList();
@@ -54,7 +54,7 @@ public class BatchController {
 
     @GetMapping("/{year}/missing")
     @Operation(summary = "People on this batch nobody has claimed yet")
-    public List<PersonDto> missing(@PathVariable int year) {
+    public List<PersonDto> missing(@PathVariable("year") int year) {
         return people.findMissingInBatch(year, Limit.of(50)).stream()
                 .map(PersonDto::masked)
                 .toList();

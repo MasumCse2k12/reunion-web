@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
-import { CalendarRange, Check, CheckCircle2, KeyRound, Search, UserPlus } from 'lucide-react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { CalendarRange, Check, CheckCircle2, Search, UserPlus } from 'lucide-react'
 import { api, ApiError, type Person } from '../lib/api'
 import { SCHOOL } from '../mock/data'
 import { useApp } from '../lib/store'
@@ -24,9 +24,9 @@ export default function Signup() {
   const [otp, setOtp] = useState('')
   const [otpSent, setOtpSent] = useState(false)
   const [challengeId, setChallengeId] = useState('')
-  const [devCode, setDevCode] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [hint, setHint] = useState<'login' | 'resend' | null>(null)
   const listRef = useRef<HTMLDivElement>(null)
 
   const yearNum = Number(year)
@@ -38,8 +38,14 @@ export default function Signup() {
   }, [])
 
   function showError(e: unknown) {
-    if (e instanceof ApiError) setError(lang === 'bn' ? e.messageBn : e.message)
-    else setError(lang === 'bn' ? 'কিছু একটা সমস্যা হয়েছে' : 'Something went wrong')
+    setHint(null)
+    if (e instanceof ApiError) {
+      setError(lang === 'bn' ? e.messageBn : e.message)
+      if (e.code === 'phone_taken') setHint('login')
+      else if (e.code === 'otp_expired') setHint('resend')
+    } else {
+      setError(lang === 'bn' ? 'কিছু একটা সমস্যা হয়েছে' : 'Something went wrong')
+    }
   }
 
   async function loadYear(y: string) {
@@ -74,13 +80,13 @@ export default function Signup() {
 
   async function sendOtp() {
     setError('')
+    setHint(null)
     setBusy(true)
     try {
       const res = picked
         ? await api.claimProfile(picked.id, phone, yearNum)
         : await api.registerNew(manualName, manualName, yearNum, phone)
       setChallengeId(res.challengeId)
-      setDevCode(res.hint)
       setOtpSent(true)
     } catch (e) {
       showError(e)
@@ -91,6 +97,7 @@ export default function Signup() {
 
   async function finish() {
     setError('')
+    setHint(null)
     setBusy(true)
     try {
       const { person } = await api.verifyOtp(challengeId, otp.replace(/\D/g, ''))
@@ -294,18 +301,27 @@ export default function Signup() {
           )}
 
           <Card className="mt-4 space-y-4">
-            <Field label={t('auth.phone')} hint={t('auth.phoneHelp')} error={error} required>
+            <Field label={t('auth.phone')} hint={t('auth.phoneHelp')} error={!otpSent ? error : undefined} required>
               <Input
                 type="tel"
                 inputMode="numeric"
                 placeholder="01XXXXXXXXX"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={(e) => { setPhone(e.target.value); setHint(null); setError('') }}
                 className="text-center text-xl tracking-widest tabular-nums"
                 maxLength={14}
                 disabled={otpSent}
               />
             </Field>
+
+            {!otpSent && hint === 'login' && (
+              <p className="rounded-xl bg-brand-50 px-4 py-3 text-center text-sm text-brand-700">
+                {lang === 'bn' ? 'এই নম্বরে অ্যাকাউন্ট আছে।' : 'This number already has an account.'}{' '}
+                <Link to="/login" className="font-bold underline underline-offset-4">
+                  {lang === 'bn' ? 'লগইন করুন' : 'Log in instead'}
+                </Link>
+              </p>
+            )}
 
             {!otpSent ? (
               <Button
@@ -319,24 +335,22 @@ export default function Signup() {
               </Button>
             ) : (
               <>
-                <Field label={t('auth.otpTitle')}>
+                <Field label={t('auth.otpTitle')} error={otpSent ? error : undefined}>
                   <Input
                     inputMode="numeric"
                     maxLength={6}
                     value={otp}
-                    onChange={(e) => setOtp(e.target.value)}
+                    onChange={(e) => { setOtp(e.target.value); setError('') }}
                     placeholder="······"
                     className="text-center text-2xl font-bold tracking-[0.5em] tabular-nums"
                   />
                 </Field>
-                {devCode && (
-                  <div className="rounded-xl bg-gold-50 px-4 py-3 text-center text-sm text-gold-700 ring-1 ring-gold-200">
-                    <KeyRound className="mr-1 inline size-4" />
-                    {lang === 'bn' ? 'ডেমো কোড' : 'Demo code'}:{' '}
-                    <button onClick={() => setOtp(devCode)} className="min-h-0 font-extrabold underline underline-offset-4">
-                      {devCode}
+                {hint === 'resend' && (
+                  <p className="text-center text-sm text-ink-500">
+                    <button onClick={() => { setOtpSent(false); setError(''); setHint(null) }} className="min-h-0 font-semibold text-brand-700 underline underline-offset-4">
+                      {t('auth.resend')}
                     </button>
-                  </div>
+                  </p>
                 )}
                 <Button full size="lg" loading={busy} onClick={finish}>
                   {t('cta.continue')}

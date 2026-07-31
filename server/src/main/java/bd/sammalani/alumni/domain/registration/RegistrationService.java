@@ -178,7 +178,7 @@ public class RegistrationService {
      * at which point the admin service evicts it by name.
      */
     @org.springframework.cache.annotation.Cacheable(
-            value = bd.sammalani.alumni.config.CacheConfig.COORDINATORS, key = "#batchYear")
+            value = bd.sammalani.alumni.config.CacheConfig.COORDINATORS, key = "#a0")
     @Transactional(readOnly = true)
     public List<bd.sammalani.alumni.domain.registration.RegistrationDtos.CoordinatorDto> coordinatorsFor(int batchYear) {
         return admins.findCoordinatorsForBatch(batchYear).stream()

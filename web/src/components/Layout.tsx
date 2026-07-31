@@ -1,7 +1,6 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { Home, LayoutDashboard, LogOut, Users, UserRound, Users2, RotateCcw } from 'lucide-react'
+import { Home, LayoutDashboard, LogOut, Users, UserRound, Users2 } from 'lucide-react'
 import { useApp } from '../lib/store'
-import { api } from '../lib/api'
 import { cx, Avatar } from './ui'
 import { SCHOOL } from '../mock/data'
 
@@ -37,24 +36,6 @@ export function LangToggle({ dark }: { dark?: boolean }) {
   )
 }
 
-export function DemoBanner() {
-  const { t } = useApp()
-  return (
-    <div className="flex items-center justify-center gap-3 bg-gold-300 px-4 py-1.5 text-center text-sm font-semibold text-ink-900">
-      <span>⚠︎ {t('demo.banner')}</span>
-      <button
-        onClick={() => {
-          api.resetDemo()
-          location.href = '/'
-        }}
-        className="inline-flex min-h-0 items-center gap-1 rounded-full bg-ink-900/10 px-2.5 py-0.5 text-xs hover:bg-ink-900/20"
-      >
-        <RotateCcw className="size-3.5" />
-        {t('demo.reset')}
-      </button>
-    </div>
-  )
-}
 
 export function SchoolMark({ dark }: { dark?: boolean }) {
   const { lang, yr } = useApp()
@@ -88,8 +69,6 @@ export default function Layout() {
 
   return (
     <div className="min-h-dvh">
-      <DemoBanner />
-
       {/* Top bar */}
       <header className="sticky top-0 z-30 border-b border-paper-2 bg-paper/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-2.5">

@@ -1,0 +1,174 @@
+{
+  "groups": [
+    {
+      "name": "app",
+      "type": "bd.sammalani.alumni.config.AppProperties",
+      "sourceType": "bd.sammalani.alumni.config.AppProperties"
+    },
+    {
+      "name": "app.bootstrap",
+      "type": "bd.sammalani.alumni.config.AppProperties$Bootstrap",
+      "sourceType": "bd.sammalani.alumni.config.AppProperties",
+      "sourceMethod": "bootstrap()"
+    },
+    {
+      "name": "app.cors",
+      "type": "bd.sammalani.alumni.config.AppProperties$Cors",
+      "sourceType": "bd.sammalani.alumni.config.AppProperties",
+      "sourceMethod": "cors()"
+    },
+    {
+      "name": "app.event",
+      "type": "bd.sammalani.alumni.config.AppProperties$Event",
+      "sourceType": "bd.sammalani.alumni.config.AppProperties",
+      "sourceMethod": "event()"
+    },
+    {
+      "name": "app.jwt",
+      "type": "bd.sammalani.alumni.config.AppProperties$Jwt",
+      "sourceType": "bd.sammalani.alumni.config.AppProperties",
+      "sourceMethod": "jwt()"
+    },
+    {
+      "name": "app.otp",
+      "type": "bd.sammalani.alumni.config.AppProperties$Otp",
+      "sourceType": "bd.sammalani.alumni.config.AppProperties",
+      "sourceMethod": "otp()"
+    },
+    {
+      "name": "app.security",
+      "type": "bd.sammalani.alumni.config.AppProperties$Security",
+      "sourceType": "bd.sammalani.alumni.config.AppProperties",
+      "sourceMethod": "security()"
+    }
+  ],
+  "properties": [
+    {
+      "name": "app.bootstrap.enabled",
+      "type": "java.lang.Boolean",
+      "sourceType": "bd.sammalani.alumni.config.AppProperties$Bootstrap",
+      "defaultValue": true
+    },
+    {
+      "name": "app.bootstrap.name",
+      "type": "java.lang.String",
+      "sourceType": "bd.sammalani.alumni.config.AppProperties$Bootstrap",
+      "defaultValue": "Super Admin"
+    },
+    {
+      "name": "app.bootstrap.password",
+      "type": "java.lang.String",
+      "sourceType": "bd.sammalani.alumni.config.AppProperties$Bootstrap"
+    },
+    {
+      "name": "app.bootstrap.phone",
+      "type": "java.lang.String",
+      "sourceType": "bd.sammalani.alumni.config.AppProperties$Bootstrap",
+      "defaultValue": ""
+    },
+    {
+      "name": "app.bootstrap.username",
+      "type": "java.lang.String",
+      "sourceType": "bd.sammalani.alumni.config.AppProperties$Bootstrap",
+      "defaultValue": "superadmin"
+    },
+    {
+      "name": "app.cors.allowed-origins",
+      "type": "java.util.List<java.lang.String>",
+      "sourceType": "bd.sammalani.alumni.config.AppProperties$Cors",
+      "defaultValue": "http:\/\/localhost:5173"
+    },
+    {
+      "name": "app.event.default-slug",
+      "type": "java.lang.String",
+      "sourceType": "bd.sammalani.alumni.config.AppProperties$Event",
+      "defaultValue": "reunion-2027"
+    },
+    {
+      "name": "app.event.first-batch",
+      "type": "java.lang.Integer",
+      "sourceType": "bd.sammalani.alumni.config.AppProperties$Event",
+      "defaultValue": 1968
+    },
+    {
+      "name": "app.event.last-batch",
+      "type": "java.lang.Integer",
+      "sourceType": "bd.sammalani.alumni.config.AppProperties$Event",
+      "defaultValue": 2026
+    },
+    {
+      "name": "app.jwt.admin-access-ttl",
+      "type": "java.time.Duration",
+      "sourceType": "bd.sammalani.alumni.config.AppProperties$Jwt",
+      "defaultValue": "PT8H"
+    },
+    {
+      "name": "app.jwt.issuer",
+      "type": "java.lang.String",
+      "sourceType": "bd.sammalani.alumni.config.AppProperties$Jwt",
+      "defaultValue": "sammalani-alumni"
+    },
+    {
+      "name": "app.jwt.member-access-ttl",
+      "type": "java.time.Duration",
+      "sourceType": "bd.sammalani.alumni.config.AppProperties$Jwt",
+      "defaultValue": "PT12H"
+    },
+    {
+      "name": "app.jwt.member-refresh-ttl",
+      "type": "java.time.Duration",
+      "sourceType": "bd.sammalani.alumni.config.AppProperties$Jwt",
+      "defaultValue": "P60D"
+    },
+    {
+      "name": "app.jwt.secret",
+      "type": "java.lang.String",
+      "sourceType": "bd.sammalani.alumni.config.AppProperties$Jwt"
+    },
+    {
+      "name": "app.otp.dev-code",
+      "type": "java.lang.String",
+      "sourceType": "bd.sammalani.alumni.config.AppProperties$Otp"
+    },
+    {
+      "name": "app.otp.length",
+      "type": "java.lang.Integer",
+      "sourceType": "bd.sammalani.alumni.config.AppProperties$Otp",
+      "defaultValue": 6
+    },
+    {
+      "name": "app.otp.max-attempts",
+      "type": "java.lang.Integer",
+      "sourceType": "bd.sammalani.alumni.config.AppProperties$Otp",
+      "defaultValue": 5
+    },
+    {
+      "name": "app.otp.requests-per-hour",
+      "type": "java.lang.Integer",
+      "sourceType": "bd.sammalani.alumni.config.AppProperties$Otp",
+      "defaultValue": 5
+    },
+    {
+      "name": "app.otp.ttl",
+      "type": "java.time.Duration",
+      "sourceType": "bd.sammalani.alumni.config.AppProperties$Otp",
+      "defaultValue": "PT5M"
+    },
+    {
+      "name": "app.security.lockout-duration",
+      "type": "java.time.Duration",
+      "sourceType": "bd.sammalani.alumni.config.AppProperties$Security",
+      "defaultValue": "PT15M"
+    },
+    {
+      "name": "app.security.max-failed-logins",
+      "type": "java.lang.Integer",
+      "sourceType": "bd.sammalani.alumni.config.AppProperties$Security",
+      "defaultValue": 5
+    }
+  ],
+  "hints": [],
+  "ignored": {
+    "properties": []
+  }
+}

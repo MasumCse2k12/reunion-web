@@ -72,11 +72,14 @@ export default function Guests() {
   const [payTo, setPayTo] = useState('')
 
   useEffect(() => {
-    Promise.all([
+    Promise.allSettled([
       api.getRegistration(),
       api.myApplication(),
       user ? api.coordinatorsFor(user.batchYear) : Promise.resolve([] as Coordinator[]),
-    ]).then(([r, a, c]) => {
+    ]).then(([rResult, aResult, cResult]) => {
+      const r = rResult.status === 'fulfilled' ? rResult.value : null
+      const a = aResult.status === 'fulfilled' ? aResult.value : null
+      const c = cResult.status === 'fulfilled' ? cResult.value : []
       setReg(r)
       setApp(a)
       setCoordinators(c)

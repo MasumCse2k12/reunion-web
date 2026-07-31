@@ -49,12 +49,41 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * A unique index doing its job — most often two members claiming one bKash
-     * transaction, or a second registration for the same event.
+     * A unique index doing its job — map known constraint names to actionable
+     * messages; fall back to a generic one for anything unexpected.
      */
     @ExceptionHandler(DataIntegrityViolationException.class)
     ProblemDetail onConflict(DataIntegrityViolationException ex) {
-        log.warn("Integrity violation: {}", ex.getMostSpecificCause().getMessage());
+        String cause = ex.getMostSpecificCause().getMessage();
+        log.warn("Integrity violation: {}", cause);
+
+        if (cause != null) {
+            if (cause.contains("person_phone_uidx")) {
+                return problem(HttpStatus.CONFLICT, "phone_taken",
+                        "This mobile number is already registered to another account. "
+                                + "Go back and search for your name instead.",
+                        "এই মোবাইল নম্বরটি অন্য একটি অ্যাকাউন্টে নিবন্ধিত। "
+                                + "ফিরে গিয়ে আপনার নাম খুঁজুন।");
+            }
+            if (cause.contains("admin_username_uidx")) {
+                return problem(HttpStatus.CONFLICT, "username_taken",
+                        "That username is already in use. Choose a different one.",
+                        "এই ব্যবহারকারীর নামটি ইতিমধ্যে ব্যবহার হচ্ছে।");
+            }
+            if (cause.contains("payment_reference_uidx")) {
+                return problem(HttpStatus.CONFLICT, "payment_reference_taken",
+                        "This transaction reference has already been submitted. "
+                                + "Check your payment history before submitting again.",
+                        "এই লেনদেন নম্বরটি ইতিমধ্যে জমা দেওয়া হয়েছে। "
+                                + "আবার জমা দেওয়ার আগে আপনার পেমেন্ট ইতিহাস দেখুন।");
+            }
+            if (cause.contains("registration") && cause.contains("event_id") && cause.contains("person_id")) {
+                return problem(HttpStatus.CONFLICT, "already_registered",
+                        "You already have a registration for this event.",
+                        "আপনি ইতিমধ্যে এই ইভেন্টে নিবন্ধিত আছেন।");
+            }
+        }
+
         return problem(HttpStatus.CONFLICT, "conflict",
                 "That conflicts with something already recorded.",
                 "এটি আগে থেকে থাকা তথ্যের সাথে সাংঘর্ষিক।");

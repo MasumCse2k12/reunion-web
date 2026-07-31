@@ -39,6 +39,7 @@ export class ApiError extends Error {
     message: string,
     public messageBn: string,
     public status?: number,
+    public code?: string,
   ) {
     super(message)
     this.name = 'ApiError'
@@ -63,13 +64,14 @@ async function http<T>(method: string, path: string, body?: unknown, token?: str
   if (res.status === 204) return undefined as T
 
   const ct = res.headers.get('content-type') ?? ''
-  const data: unknown = ct.includes('application/json') ? await res.json() : undefined
+  const data: unknown = ct.includes('json') ? await res.json() : undefined
 
   if (!res.ok) {
     const d = (data ?? {}) as Record<string, unknown>
     const msg = String(d.detail ?? d.message ?? 'Something went wrong')
     const msgBn = String(d.messageBn ?? 'কিছু একটা সমস্যা হয়েছে')
-    throw new ApiError(msg, msgBn, res.status)
+    const code = d.code ? String(d.code) : undefined
+    throw new ApiError(msg, msgBn, res.status, code)
   }
 
   return data as T
@@ -452,13 +454,6 @@ export const api = {
     return { token: s.accessToken, person: mapPerson(s.person) }
   },
 
-  async demoLogin(): Promise<{ token: string; person: Person }> {
-    throw new ApiError(
-      'Demo login is not available on the real server. Use your phone number.',
-      'ডেমো লগইন বন্ধ আছে। মোবাইল নম্বর দিয়ে লগইন করুন।',
-    )
-  },
-
   async logout(): Promise<void> {
     await http('POST', '/api/v1/auth/logout', undefined, localStorage.getItem(MEMBER_ACCESS)).catch(() => {})
     localStorage.removeItem(MEMBER_ACCESS)
@@ -680,14 +675,6 @@ export const api = {
 
   async referrals() {
     return [] as { id: string; name: string; phone: string; batchYear: number }[]
-  },
-
-  /* demo control */
-
-  resetDemo() {
-    localStorage.removeItem(MEMBER_ACCESS)
-    localStorage.removeItem(MEMBER_REFRESH)
-    localStorage.removeItem(ADMIN_ACCESS)
   },
 }
 

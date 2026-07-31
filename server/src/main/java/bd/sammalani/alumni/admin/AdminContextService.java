@@ -39,7 +39,7 @@ public class AdminContextService {
         return session;
     }
 
-    @Cacheable(value = CacheConfig.ADMIN_SCOPE, key = "#personId")
+    @Cacheable(value = CacheConfig.ADMIN_SCOPE, key = "#a0")
     @Transactional(readOnly = true)
     public AdminSession sessionOf(UUID personId) {
         return admins.findWithPersonByPersonId(personId)
@@ -50,7 +50,7 @@ public class AdminContextService {
     }
 
     /** Called whenever a role, a batch assignment or the active flag changes. */
-    @CacheEvict(value = CacheConfig.ADMIN_SCOPE, key = "#personId")
+    @CacheEvict(value = CacheConfig.ADMIN_SCOPE, key = "#a0")
     public void invalidate(UUID personId) {
         // The annotation is the whole method.
     }

@@ -33,7 +33,7 @@ public class AdminStatsService {
     private final AdminContextService context;
     private final AppProperties props;
 
-    @Cacheable(value = CacheConfig.ADMIN_STATS, key = "#session.personId()")
+    @Cacheable(value = CacheConfig.ADMIN_STATS, key = "#a0.personId()")
     @Transactional(readOnly = true)
     public AdminStatsDto statsFor(AdminSession session) {
         Set<Integer> scope = session.scopeOrNull();

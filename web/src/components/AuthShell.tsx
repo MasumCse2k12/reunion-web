@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { ArrowLeft, Phone } from 'lucide-react'
 import { useApp } from '../lib/store'
 import { cx } from './ui'
-import { DemoBanner, LangToggle, SchoolMark } from './Layout'
+import { LangToggle, SchoolMark } from './Layout'
 
 export default function AuthShell({
   children,
@@ -14,8 +14,6 @@ export default function AuthShell({
   const { t, lang } = useApp()
   return (
     <div className={cx('flex min-h-dvh flex-col bg-paper', lang === 'bn' && 'font-bn')}>
-      <DemoBanner />
-
       <header className="border-b border-paper-2 bg-white">
         <div className="mx-auto flex max-w-2xl items-center gap-3 px-4 py-3">
           {onBack ? (

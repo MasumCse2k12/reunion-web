@@ -44,30 +44,30 @@ public class AdminQueueController {
                     The cursor is opaque and a stale one simply starts from the top. \
                     `total` counts everything matching the filter, not the page.""")
     public CursorPage<ApplicationDto> list(
-            @RequestParam(required = false) MemberStatus memberStatus,
-            @RequestParam(required = false) PaymentStatus paymentStatus,
-            @RequestParam(required = false) Integer batchYear,
+            @RequestParam(required = false, name = "memberStatus") MemberStatus memberStatus,
+            @RequestParam(required = false, name = "paymentStatus") PaymentStatus paymentStatus,
+            @RequestParam(required = false, name = "batchYear") Integer batchYear,
             @RequestParam(required = false, name = "q") String search,
-            @RequestParam(required = false) String cursor,
-            @RequestParam(required = false) Integer limit) {
+            @RequestParam(required = false, name = "cursor") String cursor,
+            @RequestParam(required = false, name = "limit") Integer limit) {
         return queue.page(memberStatus, paymentStatus, batchYear, search, cursor, limit);
     }
 
     @GetMapping("/{id}")
     @Operation(summary = "One application in full")
-    public ApplicationDto one(@PathVariable UUID id) {
+    public ApplicationDto one(@PathVariable("id") UUID id) {
         return queue.one(id);
     }
 
     @PostMapping("/{id}/verify")
     @Operation(summary = "Approve or reject one member")
-    public ApplicationDto verify(@PathVariable UUID id, @Valid @RequestBody MemberDecisionRequest request) {
+    public ApplicationDto verify(@PathVariable("id") UUID id, @Valid @RequestBody MemberDecisionRequest request) {
         return queue.decideMember(id, request.decision(), request.note());
     }
 
     @PostMapping("/{id}/payment")
     @Operation(summary = "Confirm or reject one payment")
-    public ApplicationDto payment(@PathVariable UUID id, @Valid @RequestBody PaymentDecisionRequest request) {
+    public ApplicationDto payment(@PathVariable("id") UUID id, @Valid @RequestBody PaymentDecisionRequest request) {
         return queue.decidePayment(id, request.decision(), request.note());
     }
 

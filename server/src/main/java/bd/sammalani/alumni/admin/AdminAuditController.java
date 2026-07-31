@@ -50,15 +50,15 @@ public class AdminAuditController {
                     There is no `total` — this is the one table that grows without bound and \
                     counting it would be a full scan for a number nobody reads.""")
     public AuditPage list(
-            @RequestParam(required = false) String entity,
-            @RequestParam(required = false) String entityId,
-            @RequestParam(required = false) UUID actorId,
-            @RequestParam(required = false) AuditAction action,
-            @RequestParam(required = false) Integer batchYear,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant since,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant until,
-            @RequestParam(required = false) String cursor,
-            @RequestParam(required = false) Integer limit) {
+            @RequestParam(required = false, name = "entity") String entity,
+            @RequestParam(required = false, name = "entityId") String entityId,
+            @RequestParam(required = false, name = "actorId") UUID actorId,
+            @RequestParam(required = false, name = "action") AuditAction action,
+            @RequestParam(required = false, name = "batchYear") Integer batchYear,
+            @RequestParam(required = false, name = "since") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant since,
+            @RequestParam(required = false, name = "until") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant until,
+            @RequestParam(required = false, name = "cursor") String cursor,
+            @RequestParam(required = false, name = "limit") Integer limit) {
         return audit.page(entity, entityId, actorId, action, batchYear, since, until, cursor, limit);
     }
 
@@ -68,8 +68,8 @@ public class AdminAuditController {
                     `kind` is one of person, registration, payment, notice or referral. \
                     Super admin only. Anything else is a 404 — which table names exist is \
                     not a caller's business.""")
-    public List<TombstoneDto> deleted(@PathVariable String kind,
-                                      @RequestParam(required = false) Integer limit) {
+    public List<TombstoneDto> deleted(@PathVariable("kind") String kind,
+                                      @RequestParam(required = false, name = "limit") Integer limit) {
         return audit.deleted(kind, limit);
     }
 
@@ -81,7 +81,7 @@ public class AdminAuditController {
                     given. May return 409: a person's mobile number can have been claimed by \
                     somebody else while they were removed, and no automatic rule for that \
                     would be the right one.""")
-    public void restore(@PathVariable String kind, @PathVariable UUID id,
+    public void restore(@PathVariable("kind") String kind, @PathVariable("id") UUID id,
                         @Valid @RequestBody(required = false) RestoreRequest request) {
         audit.restore(kind, id, request == null ? null : request.reason());
     }

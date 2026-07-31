@@ -446,9 +446,9 @@ export type AdminUser = {
 
 export type ReviewStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
 export type PaymentStatus = 'UNPAID' | 'REPORTED' | 'CONFIRMED' | 'REJECTED'
-export type PaymentMethod = 'BKASH' | 'NAGAD' | 'ROCKET' | 'BANK' | 'CASH'
+export type PaymentMethod = 'BKASH' | 'NAGAD' | 'ROCKET' | 'BANK' | 'CASH' | 'OTHER'
 
-export const PAYMENT_METHODS: PaymentMethod[] = ['BKASH', 'NAGAD', 'ROCKET', 'BANK', 'CASH']
+export const PAYMENT_METHODS: PaymentMethod[] = ['BKASH', 'NAGAD', 'ROCKET', 'BANK', 'CASH', 'OTHER']
 
 export type Review = {
   adminId: string

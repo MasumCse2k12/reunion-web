@@ -5,7 +5,7 @@ import { useApp } from '../lib/store'
 import { api, EVENT, type Batch, type Notice } from '../lib/api'
 import { SCHOOL, TEACHERS } from '../mock/data'
 import { Badge, Button, Card, SectionTitle, Stat, cx } from '../components/ui'
-import { DemoBanner, LangToggle, SchoolMark } from '../components/Layout'
+import { LangToggle, SchoolMark } from '../components/Layout'
 
 function useCountdown(target: string) {
   const [now, setNow] = useState(() => Date.now())
@@ -52,8 +52,6 @@ export default function Landing() {
 
   return (
     <div className={cx('min-h-dvh', lang === 'bn' && 'font-bn')}>
-      <DemoBanner />
-
       {/* ---------------- Hero ---------------- */}
       <header className="relative overflow-hidden bg-brand-800 text-white">
         <div className="paper-grain absolute inset-0 opacity-60" />

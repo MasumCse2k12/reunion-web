@@ -82,14 +82,14 @@ public class AdminController {
 
     @PatchMapping("/accounts/{id}")
     @Operation(summary = "Edit a coordinator's details, batches or active flag")
-    public AdminAccountDto update(@PathVariable UUID id, @Valid @RequestBody UpdateAdminRequest request) {
+    public AdminAccountDto update(@PathVariable("id") UUID id, @Valid @RequestBody UpdateAdminRequest request) {
         return accounts.update(id, request);
     }
 
     @PostMapping("/accounts/{id}/password")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "Set a coordinator's password", description = "Returns nothing and never echoes the value.")
-    public void setPassword(@PathVariable UUID id, @Valid @RequestBody SetPasswordRequest request) {
+    public void setPassword(@PathVariable("id") UUID id, @Valid @RequestBody SetPasswordRequest request) {
         accounts.setPassword(id, request.password());
     }
 
@@ -101,7 +101,7 @@ public class AdminController {
                     registration and a history. The account is deactivated rather than removed, \
                     so it stays in the list marked disabled and the same person can be \
                     reinstated later by creating them again.""")
-    public void revoke(@PathVariable UUID id) {
+    public void revoke(@PathVariable("id") UUID id) {
         accounts.revoke(id);
     }
 }

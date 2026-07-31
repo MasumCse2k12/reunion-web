@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { KeyRound, MessageSquare, Smartphone, Zap } from 'lucide-react'
+import { KeyRound, MessageSquare, Smartphone } from 'lucide-react'
 import { api, ApiError } from '../lib/api'
 import { useApp } from '../lib/store'
 import AuthShell from '../components/AuthShell'
@@ -13,24 +13,30 @@ export default function Login() {
   const [step, setStep] = useState<'phone' | 'otp'>('phone')
   const [phone, setPhone] = useState('')
   const [challengeId, setChallengeId] = useState('')
-  const [devCode, setDevCode] = useState('')
   const [code, setCode] = useState(['', '', '', '', '', ''])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [hint, setHint] = useState<'signup' | 'resend' | null>(null)
   const boxes = useRef<(HTMLInputElement | null)[]>([])
 
   function showError(e: unknown) {
-    if (e instanceof ApiError) setError(lang === 'bn' ? e.messageBn : e.message)
-    else setError(lang === 'bn' ? 'কিছু একটা সমস্যা হয়েছে' : 'Something went wrong')
+    setHint(null)
+    if (e instanceof ApiError) {
+      setError(lang === 'bn' ? e.messageBn : e.message)
+      if (e.code === 'not_found') setHint('signup')
+      else if (e.code === 'otp_expired') setHint('resend')
+    } else {
+      setError(lang === 'bn' ? 'কিছু একটা সমস্যা হয়েছে' : 'Something went wrong')
+    }
   }
 
   async function sendCode() {
     setError('')
+    setHint(null)
     setBusy(true)
     try {
       const res = await api.requestOtp(phone)
       setChallengeId(res.challengeId)
-      setDevCode(res.hint)
       setStep('otp')
       setTimeout(() => boxes.current[0]?.focus(), 50)
     } catch (e) {
@@ -42,6 +48,7 @@ export default function Login() {
 
   async function verify(fullCode?: string) {
     setError('')
+    setHint(null)
     setBusy(true)
     try {
       const { person } = await api.verifyOtp(challengeId, fullCode ?? code.join(''))
@@ -51,19 +58,6 @@ export default function Login() {
       showError(e)
       setCode(['', '', '', '', '', ''])
       boxes.current[0]?.focus()
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  async function demoLogin() {
-    setBusy(true)
-    try {
-      const { person } = await api.demoLogin()
-      setUser(person)
-      navigate('/app')
-    } catch (e) {
-      showError(e)
     } finally {
       setBusy(false)
     }
@@ -105,12 +99,17 @@ export default function Login() {
               />
             </Field>
 
+            {hint === 'signup' && (
+              <p className="rounded-xl bg-brand-50 px-4 py-3 text-center text-sm text-brand-700">
+                {lang === 'bn' ? 'প্রথমবার?' : 'First time?'}{' '}
+                <Link to="/signup" className="font-bold underline underline-offset-4">
+                  {t('cta.findMe')}
+                </Link>
+              </p>
+            )}
+
             <Button full size="lg" loading={busy} onClick={sendCode} icon={<MessageSquare className="size-5" />}>
               {t('auth.sendCode')}
-            </Button>
-
-            <Button full variant="outline" onClick={demoLogin} icon={<Zap className="size-5" />}>
-              {t('auth.demoSkip')}
             </Button>
           </Card>
 
@@ -154,30 +153,23 @@ export default function Login() {
             </div>
 
             {error && <p className="mt-3 text-center font-medium text-red-600">{error}</p>}
-
-            {/* Dev affordance — devCode is only present on local/staging builds */}
-            {devCode && (
-              <div className="mt-4 rounded-xl bg-gold-50 px-4 py-3 text-center text-sm text-gold-700 ring-1 ring-gold-200">
-                {lang === 'bn' ? 'ডেমো কোড' : 'Demo code'}:{' '}
-                <button
-                  onClick={() => {
-                    setCode(devCode.split(''))
-                    verify(devCode)
-                  }}
-                  className="min-h-0 font-extrabold tracking-widest underline underline-offset-4"
-                >
-                  {devCode}
+            {hint === 'resend' && (
+              <p className="mt-1 text-center text-sm text-ink-500">
+                <button onClick={sendCode} className="min-h-0 font-semibold text-brand-700 underline underline-offset-4">
+                  {t('auth.resend')}
                 </button>
-              </div>
+              </p>
             )}
 
             <Button full size="lg" className="mt-4" loading={busy} onClick={() => verify()}>
               {t('auth.verify')}
             </Button>
 
-            <button onClick={sendCode} className="mt-3 w-full text-center font-semibold text-brand-700 underline underline-offset-4">
-              {t('auth.resend')}
-            </button>
+            {hint !== 'resend' && (
+              <button onClick={sendCode} className="mt-3 w-full text-center font-semibold text-brand-700 underline underline-offset-4">
+                {t('auth.resend')}
+              </button>
+            )}
           </Card>
         </div>
       )}

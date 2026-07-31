@@ -5,5 +5,6 @@ public enum PaymentMethod {
     NAGAD,
     ROCKET,
     BANK,
-    CASH
+    CASH,
+    OTHER
 }

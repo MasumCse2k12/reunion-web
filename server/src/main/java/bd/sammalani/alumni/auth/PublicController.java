@@ -41,7 +41,7 @@ public class PublicController {
     @GetMapping("/lookup")
     @Operation(summary = "Search a batch's register by name",
             description = "Returns name, batch and a masked number only.")
-    public List<PersonDto> lookup(@RequestParam int batchYear, @RequestParam(required = false) String q) {
+    public List<PersonDto> lookup(@RequestParam(name = "batchYear") int batchYear, @RequestParam(required = false, name = "q") String q) {
         return people.searchInBatch(batchYear, q, Limit.of(MAX_CANDIDATES))
                 .stream()
                 .map(PersonDto::masked)
