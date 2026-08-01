@@ -124,6 +124,22 @@ pipeline {
         }
 
         // ------------------------------------------------------------------
+        stage('Container Status') {
+        // ------------------------------------------------------------------
+            steps {
+                sh '''
+                    echo "=== Running containers ==="
+                    docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+                    echo "=== All containers (including exited) ==="
+                    docker ps -a --filter "name=${APP_NAME}" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+                    echo "=== Web container logs ==="
+                    docker logs ${APP_NAME}-web-1 --tail=30 2>&1 || \
+                    docker logs sammalani-alumni-web-1 --tail=30 2>&1 || true
+                '''
+            }
+        }
+
+        // ------------------------------------------------------------------
         stage('Health Check') {
         // ------------------------------------------------------------------
             steps {
