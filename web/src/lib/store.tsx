@@ -476,10 +476,10 @@ type Ctx = {
   setLang: (l: Lang) => void
   t: (k: TKey) => string
   /** Convert digits to Bangla numerals when the UI is in Bangla. Groups thousands. */
-  n: (v: number | string) => string
+  n: (v: number | string | null | undefined) => string
   /** Years — same digit conversion, but never grouped (2010, not 2,010). */
-  yr: (v: number | string) => string
-  money: (v: number) => string
+  yr: (v: number | string | null | undefined) => string
+  money: (v: number | null | undefined) => string
   user: Person | null
   setUser: (p: Person | null) => void
   ready: boolean
@@ -519,22 +519,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const t = useCallback((k: TKey) => DICT[lang][k] ?? DICT.en[k] ?? k, [lang])
 
   const n = useCallback(
-    (v: number | string) => {
-      const s = typeof v === 'number' ? v.toLocaleString('en-US') : v
+    (v: number | string | null | undefined) => {
+      if (v == null) return ''
+      const s = typeof v === 'number' ? v.toLocaleString('en-US') : String(v)
       return lang === 'bn' ? s.replace(/\d/g, (d) => BN_DIGITS[+d]) : s
     },
     [lang],
   )
 
   const yr = useCallback(
-    (v: number | string) => {
+    (v: number | string | null | undefined) => {
+      if (v == null) return ''
       const s = String(v)
       return lang === 'bn' ? s.replace(/\d/g, (d) => BN_DIGITS[+d]) : s
     },
     [lang],
   )
 
-  const money = useCallback((v: number) => `৳${n(v)}`, [n])
+  const money = useCallback((v: number | null | undefined) => v == null ? '' : `৳${n(v)}`, [n])
 
   const logout = useCallback(async () => {
     await api.logout()

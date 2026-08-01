@@ -92,7 +92,7 @@ export default function Guests() {
     })
   }, [user])
 
-  const ticket = (id: string) => TICKET_TYPES.find((x) => x.id === id)!
+  const ticket = (id: string) => TICKET_TYPES.find((x) => x.id === id) ?? TICKET_TYPES.find((x) => x.id === 'tt-guest')!
   const previewTicket = ticketFor(relation, age ? Number(age) : undefined)
 
   async function ensureRegistration() {

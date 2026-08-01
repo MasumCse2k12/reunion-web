@@ -2,6 +2,9 @@ spring:
   application:
     name: alumni-service
 
+  autoconfigure:
+    exclude: org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration
+
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5436/alumni}
     username: ${DB_USER:alumni}
@@ -125,7 +128,7 @@ app:
     # Override via CORS_ORIGINS env var in production and docker. In dev, the
     # default includes localhost (Vite/preview) and the LAN IP for real-device
     # testing. Update the LAN IP when your network changes (ifconfig | grep "inet 192").
-    allowed-origins: ${CORS_ORIGINS:http://localhost:5173,http://localhost:4173,http://192.168.1.104:5173,http://192.168.1.104:8080}
+    allowed-origins: ${CORS_ORIGINS:http://localhost:5173,http://localhost:4173,http://192.168.1.103:5173,http://192.168.1.103:8080}
   bootstrap:
     enabled: true
     username: ${BOOTSTRAP_ADMIN_USERNAME:superadmin}

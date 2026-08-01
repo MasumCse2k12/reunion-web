@@ -1,8 +1,32 @@
+import { Component, type ReactNode } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AppProvider, useApp } from './lib/store'
 import { AdminProvider, useAdmin } from './lib/adminStore'
 import Layout from './components/Layout'
 import { Spinner } from './components/ui'
+
+class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+  state = { error: null }
+  static getDerivedStateFromError(error: Error) { return { error } }
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-8 text-center">
+          <p className="text-2xl">⚠️</p>
+          <p className="font-bold text-ink-900">Something went wrong</p>
+          <p className="text-sm text-ink-500">{(this.state.error as Error).message}</p>
+          <button
+            className="mt-2 rounded-xl bg-brand-600 px-5 py-2.5 font-semibold text-white"
+            onClick={() => { this.setState({ error: null }); window.location.reload() }}
+          >
+            Reload
+          </button>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
 import Landing from './pages/Landing'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
@@ -40,6 +64,7 @@ function ScrollTop() {
 
 export default function App() {
   return (
+    <ErrorBoundary>
     <AppProvider>
       <AdminProvider>
         <BrowserRouter>
@@ -85,5 +110,6 @@ export default function App() {
         </BrowserRouter>
       </AdminProvider>
     </AppProvider>
+    </ErrorBoundary>
   )
 }

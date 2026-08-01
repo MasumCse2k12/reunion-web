@@ -49,7 +49,7 @@ import java.util.Date;
 import java.util.Locale;
 
 /**
- * Single-activity WebView shell for the Sammalani Alumni web app.
+ * Single-activity WebView shell for the Sammilani Alumni web app.
  *
  * <p>Every screen lives in the web layer; this activity is responsible for:
  * <ul>
@@ -258,6 +258,10 @@ public class MainActivity extends AppCompatActivity {
 
     private void setupSwipeRefresh() {
         swipeRefresh.setColorSchemeResources(R.color.brand_600);
+        // Only allow pull-to-refresh when the WebView is scrolled to the very top.
+        // Without this, SwipeRefreshLayout intercepts upward scrolls mid-page and
+        // triggers a reload instead of letting the WebView scroll up.
+        swipeRefresh.setOnChildScrollUpCallback((parent, child) -> webView.getScrollY() > 0);
         swipeRefresh.setOnRefreshListener(() -> {
             if (isNetworkAvailable()) {
                 webView.reload();
@@ -925,7 +929,7 @@ public class MainActivity extends AppCompatActivity {
         "<div class='icon'>🖥️</div>" +
         "<h1>Server Unreachable</h1>" +
         "<div class='bn'>সার্ভার পাওয়া যাচ্ছে না</div>" +
-        "<p>Your internet is working, but the Sammalani Alumni server could not be reached. " +
+        "<p>Your internet is working, but the Sammilani Alumni server could not be reached. " +
         "It may be temporarily down.<br><br>" +
         "আপনার ইন্টারনেট সংযোগ আছে, কিন্তু সার্ভারে পৌঁছানো যাচ্ছে না। " +
         "সার্ভারটি সাময়িকভাবে বন্ধ থাকতে পারে।</p>" +
