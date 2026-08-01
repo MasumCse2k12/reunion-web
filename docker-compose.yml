@@ -37,9 +37,9 @@ services:
     ports:
       # API on 9000 (loopback only — nginx is the public front door).
       # Set MINIO_BIND=0.0.0.0 in .env for real-device photo loading over Wi-Fi.
-      - "${MINIO_BIND:-127.0.0.1}:9000:9000"
+      - "${MINIO_BIND:-127.0.0.1}:${MINIO_PORT:-9000}:9000"
       # Web console on 9001 (loopback only — open for ops, never public)
-      - "127.0.0.1:9001:9001"
+      - "127.0.0.1:${MINIO_CONSOLE_PORT:-9001}:9001"
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
       interval: 5s
