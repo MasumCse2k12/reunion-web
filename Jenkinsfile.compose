@@ -1,0 +1,178 @@
+// =============================================================================
+//  Sammalani Alumni — docker compose deployment pipeline
+//
+//  Deploys the full stack (Postgres, Redis, MinIO, API, Web) on your server
+//  using the root docker-compose.yml. Run this on the machine that IS the server.
+//
+// -----------------------------------------------------------------------------
+//  A. Server / Jenkins prerequisites
+// -----------------------------------------------------------------------------
+//   1. Docker + Compose v2 installed; jenkins user in the docker group:
+//        sudo usermod -aG docker jenkins && sudo systemctl restart jenkins
+//   2. Jenkins plugins: Pipeline, Git, Credentials Binding
+//
+// -----------------------------------------------------------------------------
+//  B. One credential to add in Jenkins
+// -----------------------------------------------------------------------------
+//   Manage Jenkins → Credentials → System → Global → Add credential
+//     Kind:  Secret file
+//     File:  your .env (copy .env.example and fill in real values)
+//     ID:    ALUMNI_ENV_FILE        ← must match exactly
+//
+//   Minimum .env content:
+//     JWT_SECRET=<openssl rand -hex 32>
+//     DB_PASSWORD=<strong password>
+//     CORS_ORIGINS=https://alumni.sammalani.edu.bd
+//     MINIO_ACCESS_KEY=<key>
+//     MINIO_SECRET_KEY=<secret>
+//     MINIO_PUBLIC_BASE_URL=https://alumni.sammalani.edu.bd/photos
+//     BOOTSTRAP_ADMIN_USERNAME=superadmin
+//     BOOTSTRAP_ADMIN_PASSWORD=<first-run admin password>
+//
+// -----------------------------------------------------------------------------
+//  C. Create the Jenkins job
+// -----------------------------------------------------------------------------
+//   New Item → Pipeline → OK
+//   Pipeline section:
+//     Definition:   Pipeline script from SCM
+//     SCM:          Git
+//     URL:          https://github.com/MasumCse2k12/reunion-web.git
+//     Branch:       */main
+//     Script Path:  Jenkinsfile.compose
+//   Triggers: Poll SCM or add a GitHub webhook for instant builds.
+//   Save → Build Now.
+// =============================================================================
+
+pipeline {
+    agent any
+
+    options {
+        disableConcurrentBuilds()
+        buildDiscarder(logRotator(numToKeepStr: '15'))
+        timeout(time: 30, unit: 'MINUTES')
+        timestamps()
+    }
+
+    environment {
+        COMPOSE_FILE = 'docker-compose.yml'
+        APP_NAME     = 'sammalani-alumni'
+        API_HEALTH   = 'http://127.0.0.1:8090/smbc/actuator/health'
+        WEB_HEALTH   = 'http://127.0.0.1:8080'
+    }
+
+    stages {
+
+        // ------------------------------------------------------------------
+        stage('Checkout') {
+        // ------------------------------------------------------------------
+            steps {
+                checkout scm
+            }
+        }
+
+        // ------------------------------------------------------------------
+        stage('Prepare .env') {
+        // ------------------------------------------------------------------
+            steps {
+                withCredentials([file(credentialsId: 'ALUMNI_ENV_FILE', variable: 'ENV_FILE')]) {
+                    sh 'cp "$ENV_FILE" .env'
+                }
+                sh '''
+                    set -e
+                    for var in JWT_SECRET DB_PASSWORD MINIO_SECRET_KEY BOOTSTRAP_ADMIN_PASSWORD; do
+                        grep -q "^${var}=" .env \
+                            || { echo "ERROR: ${var} missing from .env"; exit 1; }
+                        val=$(grep "^${var}=" .env | cut -d= -f2-)
+                        [ -n "$val" ] \
+                            || { echo "ERROR: ${var} is empty in .env"; exit 1; }
+                    done
+                    echo ".env validated."
+                '''
+            }
+        }
+
+        // ------------------------------------------------------------------
+        stage('Pull base images') {
+        // ------------------------------------------------------------------
+            steps {
+                sh '''
+                    docker compose -f ${COMPOSE_FILE} -p ${APP_NAME} \
+                        pull --ignore-pull-failures postgres redis minio
+                '''
+            }
+        }
+
+        // ------------------------------------------------------------------
+        stage('Build application images') {
+        // ------------------------------------------------------------------
+            steps {
+                sh '''
+                    DOCKER_BUILDKIT=1 \
+                    docker compose -f ${COMPOSE_FILE} -p ${APP_NAME} \
+                        build --pull api web
+                '''
+            }
+        }
+
+        // ------------------------------------------------------------------
+        stage('Deploy') {
+        // ------------------------------------------------------------------
+            steps {
+                sh '''
+                    docker compose -f ${COMPOSE_FILE} -p ${APP_NAME} \
+                        up -d --remove-orphans --no-build
+                '''
+            }
+        }
+
+        // ------------------------------------------------------------------
+        stage('Health Check') {
+        // ------------------------------------------------------------------
+            steps {
+                // Poll up to 90 s (18 × 5 s) for Spring Boot to report UP.
+                script {
+                    def healthy = false
+                    for (int i = 1; i <= 18; i++) {
+                        sleep(time: 5, unit: 'SECONDS')
+                        def rc = sh(
+                            script: '''curl -fs ${API_HEALTH} | grep -q '"status":"UP"' ''',
+                            returnStatus: true
+                        )
+                        if (rc == 0) { healthy = true; break }
+                        echo "Waiting for API… attempt ${i}/18"
+                    }
+                    if (!healthy) {
+                        error('API did not become healthy within 90 s.')
+                    }
+                }
+                sh 'curl -fso /dev/null ${WEB_HEALTH}'
+                echo "All services healthy."
+            }
+        }
+
+        // ------------------------------------------------------------------
+        stage('Prune old images') {
+        // ------------------------------------------------------------------
+            steps {
+                sh 'docker image prune -f'
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "Deployment successful — stack '${APP_NAME}' is live."
+        }
+        failure {
+            echo "Deployment FAILED. Dumping recent container logs…"
+            sh '''
+                docker compose -f ${COMPOSE_FILE} -p ${APP_NAME} \
+                    logs --tail=80 || true
+            '''
+        }
+        always {
+            // Never leave .env on disk after the build.
+            sh 'rm -f .env'
+        }
+    }
+}
