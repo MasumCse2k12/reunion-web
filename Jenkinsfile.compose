@@ -95,7 +95,7 @@ pipeline {
             steps {
                 sh '''
                     docker compose -f ${COMPOSE_FILE} -p ${APP_NAME} \
-                        pull --ignore-pull-failures postgres redis minio
+                        pull --ignore-pull-failures redis minio
                 '''
             }
         }
