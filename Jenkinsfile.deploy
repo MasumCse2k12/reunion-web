@@ -174,7 +174,8 @@ pipeline {
                     docker run -d \
                         --name    ${WEB_CONTAINER} \
                         --restart unless-stopped \
-                        -p ${WEB_PORT}:80 \
+                        -p ${WEB_PORT}:${WEB_PORT} \
+                        -e WEB_PORT=${WEB_PORT} \
                         ${WEB_IMAGE}:latest
                 '''
             }

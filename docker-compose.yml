@@ -87,7 +87,9 @@ services:
     image: sammalani/alumni-web:local
     # Default: loopback only. Set WEB_BIND=0.0.0.0 in .env for real-device testing.
     ports:
-      - "${WEB_BIND:-127.0.0.1}:${WEB_PORT:-8080}:80"
+      - "${WEB_BIND:-127.0.0.1}:${WEB_PORT:-8080}:${WEB_PORT:-8080}"
+    environment:
+      WEB_PORT: "${WEB_PORT:-8080}"
     # No depends_on: the app still resolves everything from src/lib/api.ts and
     # localStorage, so it does not yet call the API. Add one when it does.
     restart: unless-stopped
