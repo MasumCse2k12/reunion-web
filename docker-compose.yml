@@ -81,17 +81,16 @@ services:
       OTP_DEV_CODE: ${OTP_DEV_CODE:-}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
-    # Default: loopback only — nginx is the public front door on a real server.
-    # For real-device testing on the same Wi-Fi set API_BIND=0.0.0.0 in .env.
-    ports:
-      - "${API_BIND:-127.0.0.1}:${API_PORT:-8090}:8090"
-    environment:
-      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-http://minio:9000}
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
       MINIO_BUCKET: ${MINIO_BUCKET:-alumni-photos}
       # In production, replace this with your public nginx/CDN URL in front of MinIO.
       MINIO_PUBLIC_BASE_URL: ${MINIO_PUBLIC_BASE_URL:-http://localhost:9000}
+    # Default: loopback only — nginx is the public front door on a real server.
+    # For real-device testing on the same Wi-Fi set API_BIND=0.0.0.0 in .env.
+    ports:
+      - "${API_BIND:-127.0.0.1}:${API_PORT:-8090}:8090"
     depends_on:
       postgres:
         condition: service_healthy
