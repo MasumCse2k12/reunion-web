@@ -144,11 +144,22 @@ pipeline {
                         error('API did not become healthy within 90 s.')
                     }
                 }
-                sh '''
-                    WEB_PORT=$(grep "^WEB_PORT=" .env | cut -d= -f2-)
-                    WEB_PORT=${WEB_PORT:-8080}
-                    curl -fso /dev/null "http://127.0.0.1:${WEB_PORT}"
-                '''
+                script {
+                    def webPort = sh(script: "grep '^WEB_PORT=' .env | cut -d= -f2- || echo '8080'", returnStdout: true).trim() ?: '8080'
+                    def webUp = false
+                    for (int i = 1; i <= 12; i++) {
+                        sleep(time: 5, unit: 'SECONDS')
+                        def rc = sh(
+                            script: "curl -fso /dev/null http://127.0.0.1:${webPort}",
+                            returnStatus: true
+                        )
+                        if (rc == 0) { webUp = true; break }
+                        echo "Waiting for web on port ${webPort}… attempt ${i}/12"
+                    }
+                    if (!webUp) {
+                        error("Web container did not become reachable within 60 s.")
+                    }
+                }
                 echo "All services healthy."
             }
         }
