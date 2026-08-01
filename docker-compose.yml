@@ -12,25 +12,6 @@
 name: sammalani-alumni
 
 services:
-  postgres:
-    image: postgres:17-alpine
-    environment:
-      POSTGRES_DB: alumni
-      POSTGRES_USER: alumni
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-alumni}
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    # Loopback only — accessible from the server itself (e.g. a DB client via SSH tunnel).
-    # Never expose 0.0.0.0 on a public server.
-    ports:
-      - "127.0.0.1:5434:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U alumni -d alumni"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-    restart: unless-stopped
-
   redis:
     image: redis:7-alpine
     # Cache and OTP store only — nothing here is worth an fsync, and losing it
@@ -69,7 +50,7 @@ services:
       context: ./server
     image: sammalani/alumni-api:local
     environment:
-      DB_URL: jdbc:postgresql://postgres:5432/alumni
+      DB_URL: ${DB_URL:-jdbc:postgresql://172.17.0.1:5432/alumni}
       DB_USER: alumni
       DB_PASSWORD: ${DB_PASSWORD:-alumni}
       REDIS_HOST: redis
@@ -94,8 +75,6 @@ services:
     ports:
       - "${API_BIND:-127.0.0.1}:${API_PORT:-8090}:8090"
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
       minio:
@@ -114,5 +93,4 @@ services:
     restart: unless-stopped
 
 volumes:
-  pgdata:
   miniodata:
