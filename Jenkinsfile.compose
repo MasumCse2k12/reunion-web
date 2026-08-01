@@ -57,7 +57,6 @@ pipeline {
         COMPOSE_FILE = 'docker-compose.yml'
         APP_NAME     = 'sammalani-alumni'
         API_HEALTH   = 'http://127.0.0.1:8090/smbc/actuator/health'
-        WEB_HEALTH   = 'http://127.0.0.1:8080'
     }
 
     stages {
@@ -145,7 +144,11 @@ pipeline {
                         error('API did not become healthy within 90 s.')
                     }
                 }
-                sh 'curl -fso /dev/null ${WEB_HEALTH}'
+                sh '''
+                    WEB_PORT=$(grep "^WEB_PORT=" .env | cut -d= -f2-)
+                    WEB_PORT=${WEB_PORT:-8080}
+                    curl -fso /dev/null "http://127.0.0.1:${WEB_PORT}"
+                '''
                 echo "All services healthy."
             }
         }
