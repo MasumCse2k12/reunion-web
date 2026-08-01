@@ -165,16 +165,18 @@ pipeline {
     post {
         success {
             echo "Deployment successful — stack '${APP_NAME}' is live."
+            sh 'rm -f .env'
         }
         failure {
+            // Dump logs BEFORE deleting .env — docker compose needs it for interpolation.
             echo "Deployment FAILED. Dumping recent container logs…"
             sh '''
                 docker compose -f ${COMPOSE_FILE} -p ${APP_NAME} \
                     logs --tail=80 || true
             '''
+            sh 'rm -f .env'
         }
-        always {
-            // Never leave .env on disk after the build.
+        aborted {
             sh 'rm -f .env'
         }
     }
