@@ -428,7 +428,7 @@ export default function Guests() {
               <div key={c.id} className="flex items-center gap-3 rounded-xl bg-paper-2/70 px-3 py-2.5">
                 <Avatar name={c.name} size="sm" />
                 <span className="min-w-0 flex-1 truncate font-semibold text-ink-700">
-                  {lang === 'bn' ? c.nameBn : c.name}
+                  {c.nameBn || c.name}
                 </span>
                 <a
                   href={`tel:+88${c.phone}`}
@@ -565,7 +565,7 @@ export default function Guests() {
               <Select value={payTo} onChange={(e) => setPayTo(e.target.value)}>
                 {coordinators.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {lang === 'bn' ? c.nameBn : c.name}
+                    {c.nameBn || c.name}
                   </option>
                 ))}
               </Select>
