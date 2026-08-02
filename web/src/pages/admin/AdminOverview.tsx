@@ -92,7 +92,7 @@ export default function AdminOverview() {
               <Card key={a.id} className="flex items-center gap-3 p-3">
                 <Avatar name={a.name} />
                 <div className="min-w-0 flex-1">
-                  <div className="truncate font-bold text-ink-900">{lang === 'bn' ? a.nameBn : a.name}</div>
+                  <div className="truncate font-bold text-ink-900">{a.nameBn || a.name}</div>
                   <div className="truncate text-sm text-ink-400">
                     {lang === 'bn' ? 'এসএসসি' : 'SSC'} {yr(a.batchYear)} · {n(a.phone)}
                   </div>

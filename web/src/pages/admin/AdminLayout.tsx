@@ -41,7 +41,7 @@ export default function AdminLayout() {
           <div className="min-w-0 flex-1 leading-tight">
             <div className="truncate font-bold">{t('admin.portal')}</div>
             <div className="truncate text-xs text-white/55">
-              {admin && (lang === 'bn' ? admin.nameBn : admin.name)} ·{' '}
+              {admin && (admin.nameBn || admin.name)} ·{' '}
               {admin && t(`admin.role${admin.role}` as never)}
               {scope && ` · ${yr(scope.from)}–${yr(scope.to)}`}
               {!scope && ` · ${t('admin.scopeAll')}`}

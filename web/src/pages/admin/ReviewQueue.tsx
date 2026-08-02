@@ -302,7 +302,7 @@ export default function ReviewQueue({ mode }: { mode: Mode }) {
                 <Checkbox checked={picked} onChange={() => toggle(a.id)} label={t('admin.selectRow')} />
                 <Avatar name={a.name} />
                 <div className="ml-1.5 min-w-0 flex-1">
-                  <div className="truncate font-bold text-ink-900">{lang === 'bn' ? a.nameBn : a.name}</div>
+                  <div className="truncate font-bold text-ink-900">{a.nameBn || a.name}</div>
                   <div className="truncate text-sm text-ink-400">
                     {lang === 'bn' ? 'এসএসসি' : 'SSC'} {yr(a.batchYear)} ·{' '}
                     <span className="tabular-nums">{n(a.phone)}</span>
@@ -414,7 +414,7 @@ export default function ReviewQueue({ mode }: { mode: Mode }) {
               {selectedApps.slice(0, NAME_PREVIEW).map((a) => (
                 <div key={a.id} className="flex items-baseline justify-between gap-3">
                   <span className="min-w-0 truncate font-semibold text-ink-700">
-                    {lang === 'bn' ? a.nameBn : a.name}
+                    {a.nameBn || a.name}
                   </span>
                   <span className="shrink-0 text-sm text-ink-400">{yr(a.batchYear)}</span>
                 </div>
@@ -480,7 +480,7 @@ export default function ReviewQueue({ mode }: { mode: Mode }) {
               <Avatar name={open.name} size="lg" />
               <div className="min-w-0">
                 <div className="truncate text-lg font-extrabold text-ink-900">
-                  {lang === 'bn' ? open.nameBn : open.name}
+                  {open.nameBn || open.name}
                 </div>
                 <div className="text-ink-500">
                   {lang === 'bn' ? 'এসএসসি' : 'SSC'} {yr(open.batchYear)}

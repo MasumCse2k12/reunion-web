@@ -169,7 +169,7 @@ export default function AdminAccounts() {
           <Card key={a.id} className={cx('flex flex-wrap items-center gap-3 p-3', !a.active && 'opacity-60')}>
             <Avatar name={a.name} />
             <div className="min-w-0 flex-1">
-              <div className="truncate font-bold text-ink-900">{lang === 'bn' ? a.nameBn : a.name}</div>
+              <div className="truncate font-bold text-ink-900">{a.nameBn || a.name}</div>
               <div className="truncate font-mono text-sm text-ink-400">
                 {a.username} · <span className="tabular-nums">{n(a.phone)}</span>
               </div>
