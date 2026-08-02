@@ -86,6 +86,7 @@ pipeline {
         MINIO_BUCKET          = "alumni-photos"
         MINIO_PUBLIC_BASE_URL = "https://alumni.sammalani.edu.bd/photos"
         LOG_LEVEL             = "INFO"
+        SWAGGER_ENABLED       = "false"
     }
 
     stages {
@@ -159,6 +160,7 @@ pipeline {
                             -e MINIO_PUBLIC_BASE_URL="${MINIO_PUBLIC_BASE_URL}" \
                             -e BOOTSTRAP_ADMIN_PASSWORD="$BOOTSTRAP_ADMIN_PASSWORD" \
                             -e LOG_LEVEL="${LOG_LEVEL}" \
+                            -e SWAGGER_ENABLED="${SWAGGER_ENABLED}" \
                             ${API_IMAGE}:latest
                     '''
                 }
