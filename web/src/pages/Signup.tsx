@@ -224,7 +224,7 @@ export default function Signup() {
                 >
                   <Avatar name={p.name} photoUrl={p.photoUrl} />
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate font-bold text-ink-900">{lang === 'bn' ? p.nameBn : p.name}</span>
+                    <span className="block truncate font-bold text-ink-900">{p.nameBn || p.name}</span>
                     <span className="block truncate text-sm text-ink-400">
                       {p.status === 'CLAIMED'
                         ? lang === 'bn'
@@ -285,7 +285,7 @@ export default function Signup() {
               <Avatar name={picked.name} photoUrl={picked.photoUrl} size="lg" />
               <div className="min-w-0">
                 <div className="truncate text-lg font-bold text-ink-900">
-                  {lang === 'bn' ? picked.nameBn : picked.name}
+                  {picked.nameBn || picked.name}
                 </div>
                 <div className="text-ink-500">
                   {lang === 'bn' ? 'এসএসসি' : 'SSC'} {yr(picked.batchYear)}
@@ -375,7 +375,7 @@ export default function Signup() {
               <Avatar name={picked?.name ?? manualName} photoUrl={picked?.photoUrl} size="lg" />
               <div className="min-w-0">
                 <div className="truncate text-lg font-bold text-ink-900">
-                  {picked ? (lang === 'bn' ? picked.nameBn : picked.name) : manualName}
+                  {picked ? (picked.nameBn || picked.name) : manualName}
                 </div>
                 <div className="text-ink-500">
                   {lang === 'bn' ? 'এসএসসি' : 'SSC'} {yr(yearNum)}

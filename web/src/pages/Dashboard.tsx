@@ -61,7 +61,7 @@ export default function Dashboard() {
         <Avatar name={me.name} photoUrl={me.photoUrl} size="lg" />
         <div className="min-w-0">
           <p className="text-ink-500">{t('dash.greeting')},</p>
-          <h1 className="truncate text-2xl font-extrabold text-ink-900">{lang === 'bn' ? me.nameBn : me.name}</h1>
+          <h1 className="truncate text-2xl font-extrabold text-ink-900">{me.nameBn || me.name}</h1>
           <Badge tone="green">
             {lang === 'bn' ? 'এসএসসি' : 'SSC'} {yr(me.batchYear)}
           </Badge>
@@ -242,7 +242,7 @@ export default function Dashboard() {
               <Card key={p.id} className={cx('flex items-center gap-3 p-3', done && 'border-brand-200 bg-brand-50/50')}>
                 <Avatar name={p.name} photoUrl={p.photoUrl} />
                 <div className="min-w-0 flex-1">
-                  <div className="truncate font-bold text-ink-900">{lang === 'bn' ? p.nameBn : p.name}</div>
+                  <div className="truncate font-bold text-ink-900">{p.nameBn || p.name}</div>
                   <div className="text-sm text-ink-400">
                     {lang === 'bn' ? 'এসএসসি' : 'SSC'} {yr(p.batchYear)}
                   </div>
@@ -289,7 +289,7 @@ export default function Dashboard() {
               <Avatar name={referTarget.name} photoUrl={referTarget.photoUrl} />
               <div className="min-w-0">
                 <div className="truncate font-bold text-ink-900">
-                  {lang === 'bn' ? referTarget.nameBn : referTarget.name}
+                  {referTarget.nameBn || referTarget.name}
                 </div>
                 <div className="text-sm text-ink-400">
                   {lang === 'bn' ? 'এসএসসি' : 'SSC'} {yr(referTarget.batchYear)}

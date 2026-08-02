@@ -258,7 +258,7 @@ function mapPerson(r: PersonRaw): Person {
   return {
     id: r.id,
     name: r.name,
-    nameBn: r.nameBn ?? r.name,
+    nameBn: r.nameBn || r.name,
     batchYear: r.batchYear,
     status: r.status === 'SEEDED' ? 'SEEDED' : 'CLAIMED',
     phone: r.phone,
@@ -335,7 +335,7 @@ function mapAdminApplication(r: ApplicationRaw): Application {
     id: r.id,
     personId: r.personId,
     name: r.name,
-    nameBn: r.nameBn ?? r.name,
+    nameBn: r.nameBn || r.name,
     batchYear: r.batchYear,
     phone: r.phone,
     email: r.email,

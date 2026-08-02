@@ -97,7 +97,7 @@ export default function BatchDetail() {
             <div className="min-w-0 flex-1">
               <div className="truncate font-bold text-ink-900">
                 {p.deceased && <span className="text-ink-400">{t('batches.deceased')} </span>}
-                {lang === 'bn' ? p.nameBn : p.name}
+                {p.nameBn || p.name}
               </div>
               {p.status === 'CLAIMED' ? (
                 <div className="flex flex-wrap gap-x-3 text-sm text-ink-400">
