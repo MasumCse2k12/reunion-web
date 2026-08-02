@@ -87,9 +87,10 @@ services:
     build:
       context: ./web
     image: sammalani/alumni-web:local
-    # Default: loopback only. Set WEB_BIND=0.0.0.0 in .env for real-device testing.
+    # Default: all interfaces so the app is reachable externally.
+    # Set WEB_BIND=127.0.0.1 in .env to restrict to loopback only.
     ports:
-      - "${WEB_BIND:-127.0.0.1}:${WEB_PORT:-8080}:${WEB_PORT:-8080}"
+      - "${WEB_BIND:-0.0.0.0}:${WEB_PORT:-8080}:${WEB_PORT:-8080}"
     environment:
       WEB_PORT: "${WEB_PORT:-8080}"
     # No depends_on: the app still resolves everything from src/lib/api.ts and
