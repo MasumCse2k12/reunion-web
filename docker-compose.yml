@@ -35,9 +35,9 @@ services:
     volumes:
       - miniodata:/data
     ports:
-      # API on 9000 (loopback only — nginx is the public front door).
-      # Set MINIO_BIND=0.0.0.0 in .env for real-device photo loading over Wi-Fi.
-      - "${MINIO_BIND:-127.0.0.1}:${MINIO_PORT:-9000}:9000"
+      # API on 9000 — default all interfaces for external access.
+      # Set MINIO_BIND=127.0.0.1 in .env to restrict to loopback only.
+      - "${MINIO_BIND:-0.0.0.0}:${MINIO_PORT:-9000}:9000"
       # Web console on 9001 (loopback only — open for ops, never public)
       - "127.0.0.1:${MINIO_CONSOLE_PORT:-9001}:9001"
     healthcheck:
@@ -72,10 +72,10 @@ services:
       MINIO_BUCKET: ${MINIO_BUCKET:-alumni-photos}
       # In production, replace this with your public nginx/CDN URL in front of MinIO.
       MINIO_PUBLIC_BASE_URL: ${MINIO_PUBLIC_BASE_URL:-http://localhost:9000}
-    # Default: loopback only — nginx is the public front door on a real server.
-    # For real-device testing on the same Wi-Fi set API_BIND=0.0.0.0 in .env.
+    # Default: all interfaces so the API is reachable externally.
+    # Set API_BIND=127.0.0.1 in .env to restrict to loopback only.
     ports:
-      - "${API_BIND:-127.0.0.1}:${API_PORT:-8090}:8090"
+      - "${API_BIND:-0.0.0.0}:${API_PORT:-8090}:8090"
     depends_on:
       redis:
         condition: service_healthy
