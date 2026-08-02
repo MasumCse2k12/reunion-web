@@ -241,11 +241,6 @@ export default function Landing() {
                   </li>
                 ))}
               </ul>
-              <p className="mt-3 border-t border-paper-2 pt-3 text-sm text-ink-400">
-                {lang === 'bn'
-                  ? 'এই তালিকাটি প্রকৃত — বিদ্যালয়ের বর্তমান শিক্ষকমণ্ডলী। পৃষ্ঠার বাকি সব তথ্য কাল্পনিক।'
-                  : 'This list is real — the school’s current staff. Everything else on this page is fictional.'}
-              </p>
             </Card>
           </div>
         </section>
