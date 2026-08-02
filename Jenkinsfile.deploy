@@ -69,9 +69,10 @@ pipeline {
         // Host port → container port 8090 (Spring Boot). Change the left side only.
         API_PORT      = "8090"
 
-        // ── Production API URL — baked into the web image at build time ───────
-        // Vite embeds this at compile time; changing it requires a new image build.
-        VITE_API_BASE_URL = "https://alumni.sammalani.edu.bd/smbc"
+        // ── Production values — baked into the web image at build time ──────
+        // Vite embeds these at compile time; changing them requires a new image build.
+        VITE_API_BASE_URL   = "https://alumni.sammalani.edu.bd/smbc"
+        VITE_CONTACT_PHONE  = "01943177909"
 
         // ── Non-secret API runtime config ─────────────────────────────────────
         // Secrets (JWT_SECRET, DB_PASSWORD, …) are injected via withCredentials.
@@ -110,7 +111,7 @@ pipeline {
                         // the Dockerfile pick it up via `COPY . .` without any
                         // ARG/ENV changes to the Dockerfile itself.
                         dir('web') {
-                            sh 'docker build --no-cache --build-arg VITE_API_BASE_URL="${VITE_API_BASE_URL}" -t ${WEB_IMAGE}:latest .'
+                            sh 'docker build --no-cache --build-arg VITE_API_BASE_URL="${VITE_API_BASE_URL}" --build-arg VITE_CONTACT_PHONE="${VITE_CONTACT_PHONE}" -t ${WEB_IMAGE}:latest .'
                         }
                     }
                 }
