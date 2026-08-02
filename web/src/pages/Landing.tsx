@@ -279,7 +279,7 @@ export default function Landing() {
             <Phone className="size-5" />
             {t('auth.needHelp')}: {CONTACT_PHONE}
           </a>
-          <Link to="/admin/login" className="mt-2 inline-block text-xs font-semibold text-ink-400 underline underline-offset-4">
+          <Link to="/admin/login" className="mt-4 inline-block text-xs font-semibold text-ink-400 underline underline-offset-4">
             {t('admin.portal')}
           </Link>
         </div>
