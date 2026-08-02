@@ -86,6 +86,8 @@ services:
   web:
     build:
       context: ./web
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8090/smbc}
     image: sammalani/alumni-web:local
     # Default: all interfaces so the app is reachable externally.
     # Set WEB_BIND=127.0.0.1 in .env to restrict to loopback only.

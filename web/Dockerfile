@@ -17,6 +17,11 @@ RUN --mount=type=cache,target=/root/.npm npm ci
 
 COPY . .
 
+# VITE_API_BASE_URL is baked into the bundle at build time by Vite.
+# Pass it as a build arg so production builds point at the real API host.
+ARG VITE_API_BASE_URL
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+
 # Typecheck here rather than trusting it happened upstream: `vite build` strips
 # types without checking them, so a broken build would otherwise ship happily.
 RUN npm run typecheck && npm run build
