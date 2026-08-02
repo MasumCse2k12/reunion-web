@@ -272,16 +272,18 @@ export default function Landing() {
         <div className="mx-auto max-w-6xl px-4 py-8 text-center text-ink-500">
           <div className="font-bold text-ink-700">{lang === 'bn' ? SCHOOL.nameBn : SCHOOL.nameEn}</div>
           <div className="text-sm">{lang === 'bn' ? SCHOOL.locationBn : SCHOOL.locationEn}</div>
-          <a
-            href={`tel:+880${CONTACT_PHONE.replace(/^0/, '')}`}
-            className="mt-4 inline-flex items-center gap-2 rounded-full bg-brand-600 px-5 py-2.5 font-semibold text-white"
-          >
-            <Phone className="size-5" />
-            {t('auth.needHelp')}: {CONTACT_PHONE}
-          </a>
-          <Link to="/admin/login" className="mt-4 inline-block text-xs font-semibold text-ink-400 underline underline-offset-4">
-            {t('admin.portal')}
-          </Link>
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-4">
+            <a
+              href={`tel:+880${CONTACT_PHONE.replace(/^0/, '')}`}
+              className="inline-flex items-center gap-2 rounded-full bg-brand-600 px-5 py-2.5 font-semibold text-white"
+            >
+              <Phone className="size-5" />
+              {t('auth.needHelp')}: {CONTACT_PHONE}
+            </a>
+            <Link to="/admin/login" className="text-xs font-semibold text-ink-400 underline underline-offset-4">
+              {t('admin.portal')}
+            </Link>
+          </div>
         </div>
       </footer>
     </div>
