@@ -66,6 +66,7 @@ services:
       OTP_DEV_CODE: ${OTP_DEV_CODE:-}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      SWAGGER_ENABLED: ${SWAGGER_ENABLED:-true}
       MINIO_ENDPOINT: ${MINIO_ENDPOINT:-http://minio:9000}
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}

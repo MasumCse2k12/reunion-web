@@ -28,6 +28,7 @@
 //     MINIO_PUBLIC_BASE_URL=https://alumni.sammalani.edu.bd/photos
 //     BOOTSTRAP_ADMIN_USERNAME=superadmin
 //     BOOTSTRAP_ADMIN_PASSWORD=<first-run admin password>
+//     SWAGGER_ENABLED=false
 //
 // -----------------------------------------------------------------------------
 //  C. Create the Jenkins job
@@ -107,7 +108,10 @@ pipeline {
                 sh '''
                     DOCKER_BUILDKIT=1 \
                     docker compose -f ${COMPOSE_FILE} -p ${APP_NAME} \
-                        build --pull api web
+                        build --pull api
+                    DOCKER_BUILDKIT=1 \
+                    docker compose -f ${COMPOSE_FILE} -p ${APP_NAME} \
+                        build --pull --no-cache web
                 '''
             }
         }
