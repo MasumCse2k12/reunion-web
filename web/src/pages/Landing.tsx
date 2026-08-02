@@ -272,7 +272,7 @@ export default function Landing() {
         <div className="mx-auto max-w-6xl px-4 py-8 text-center text-ink-500">
           <div className="font-bold text-ink-700">{lang === 'bn' ? SCHOOL.nameBn : SCHOOL.nameEn}</div>
           <div className="text-sm">{lang === 'bn' ? SCHOOL.locationBn : SCHOOL.locationEn}</div>
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-4">
+          <div className="mt-4 flex flex-col items-center gap-3">
             <a
               href={`tel:+880${CONTACT_PHONE.replace(/^0/, '')}`}
               className="inline-flex items-center gap-2 rounded-full bg-brand-600 px-5 py-2.5 font-semibold text-white"
