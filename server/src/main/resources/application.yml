@@ -115,9 +115,9 @@ app:
     admin-access-ttl: PT8H
   otp:
     length: 6
-    ttl: PT5M
-    max-attempts: 5
-    requests-per-hour: 5
+    ttl: ${OTP_TTL:PT5M}
+    max-attempts: ${OTP_MAX_ATTEMPTS:5}
+    requests-per-hour: ${OTP_REQUESTS_PER_HOUR:5}
     dev-code: ${OTP_DEV_CODE:}      # set only on a laptop; logs a warning when present
   security:
     max-failed-logins: 5

@@ -45,4 +45,19 @@ public interface PersonRepository extends JpaRepository<Person, UUID> {
     List<Person> findMissingInBatch(@Param("batchYear") int batchYear, Limit limit);
 
     long countByStatusIn(List<PersonStatus> statuses);
+
+    /**
+     * Find an existing unverified row (SEEDED, no phone) for the same name and
+     * batch. Used by the self-registration flow to reuse rather than duplicate a
+     * row when someone submits the form more than once without completing OTP.
+     */
+    @Query("""
+            select p from Person p
+            where lower(p.name) = lower(:name)
+              and p.batchYear = :batchYear
+              and p.phone is null
+              and p.status = bd.sammalani.alumni.domain.person.PersonStatus.SEEDED
+              and p.mergedIntoId is null
+            """)
+    Optional<Person> findUnverifiedByNameAndBatch(@Param("name") String name, @Param("batchYear") int batchYear);
 }

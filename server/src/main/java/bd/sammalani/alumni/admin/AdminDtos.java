@@ -213,4 +213,7 @@ public final class AdminDtos {
 
     public record RestoreRequest(@Size(max = 500) String reason) {
     }
+
+    public record DeletePersonRequest(@Size(max = 500) String reason) {
+    }
 }

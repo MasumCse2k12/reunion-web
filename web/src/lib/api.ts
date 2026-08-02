@@ -838,4 +838,8 @@ export const adminApi = {
   async deleteAdmin(id: string): Promise<void> {
     await adminHttp<void>('DELETE', `/api/v1/admin/accounts/${id}`)
   },
+
+  async deletePerson(personId: string, reason?: string): Promise<void> {
+    await adminHttp<void>('DELETE', `/api/v1/admin/people/${personId}`, reason?.trim() ? { reason: reason.trim() } : undefined)
+  },
 }

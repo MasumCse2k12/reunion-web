@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { AlertTriangle, Check, Clock, Search, Users2, Wallet, X } from 'lucide-react'
+import { AlertTriangle, Check, Clock, Search, Trash2, Users2, Wallet, X } from 'lucide-react'
 import {
   adminApi,
   ApiError,
@@ -10,6 +10,7 @@ import {
   type ReviewStatus,
 } from '../../lib/api'
 import { useApp, type Lang, type TKey } from '../../lib/store'
+import { useAdmin } from '../../lib/adminStore'
 import {
   Avatar,
   Badge,
@@ -57,6 +58,7 @@ function paymentTone(s: PaymentStatus) {
 
 export default function ReviewQueue({ mode }: { mode: Mode }) {
   const { t, lang, n, yr, money } = useApp()
+  const { isSuper } = useAdmin()
 
   const [apps, setApps] = useState<Application[] | null>(null)
   const [nextCursor, setNextCursor] = useState<string | null>(null)
@@ -71,6 +73,11 @@ export default function ReviewQueue({ mode }: { mode: Mode }) {
   const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+
+  const [deleteConfirm, setDeleteConfirm] = useState(false)
+  const [deleteReason, setDeleteReason] = useState('')
+  const [deleteBusy, setDeleteBusy] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
 
   /* ---- bulk selection ---- */
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -176,6 +183,23 @@ export default function ReviewQueue({ mode }: { mode: Mode }) {
       setError(e instanceof ApiError ? (lang === 'bn' ? e.messageBn : e.message) : 'Error')
     } finally {
       setBusy(false)
+    }
+  }
+
+  async function deletePersonConfirmed() {
+    if (!open) return
+    setDeleteError('')
+    setDeleteBusy(true)
+    try {
+      await adminApi.deletePerson(open.personId, deleteReason)
+      setApps((prev) => prev?.filter((a) => a.personId !== open.personId) ?? null)
+      setOpen(null)
+      setDeleteConfirm(false)
+      setDeleteReason('')
+    } catch (e) {
+      setDeleteError(e instanceof ApiError ? (lang === 'bn' ? e.messageBn : e.message) : 'Error')
+    } finally {
+      setDeleteBusy(false)
     }
   }
 
@@ -473,7 +497,7 @@ export default function ReviewQueue({ mode }: { mode: Mode }) {
       </Sheet>
 
       {/* ---------- Detail + decision ---------- */}
-      <Sheet open={!!open} onClose={() => setOpen(null)} title={t('admin.details')}>
+      <Sheet open={!!open} onClose={() => { setOpen(null); setDeleteConfirm(false); setDeleteReason('') }} title={t('admin.details')}>
         {open && (
           <div className="space-y-4">
             <div className="flex items-center gap-3">
@@ -588,6 +612,42 @@ export default function ReviewQueue({ mode }: { mode: Mode }) {
                 {approveLabel}
               </Button>
             </div>
+
+            {/* Super admin: delete person */}
+            {isSuper && !deleteConfirm && (
+              <button
+                type="button"
+                onClick={() => { setDeleteConfirm(true); setDeleteError('') }}
+                className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-red-200 py-2.5 text-sm font-semibold text-red-400 transition hover:border-red-400 hover:text-red-600"
+              >
+                <Trash2 className="size-4" />
+                Delete person
+              </button>
+            )}
+
+            {isSuper && deleteConfirm && (
+              <div className="space-y-3 rounded-xl border-2 border-red-200 bg-red-50 p-4">
+                <p className="text-sm font-bold text-red-700">
+                  This permanently removes {open.nameBn || open.name} from the directory (soft-delete, reversible by an engineer).
+                </p>
+                <textarea
+                  rows={2}
+                  value={deleteReason}
+                  onChange={(e) => setDeleteReason(e.target.value)}
+                  placeholder="Reason (optional, recorded in audit log)"
+                  className="w-full rounded-xl border-2 border-red-200 bg-white px-4 py-3 text-ink-900 placeholder:text-ink-400 focus:border-red-400 focus:outline-none"
+                />
+                {deleteError && <p className="text-sm font-semibold text-red-600">{deleteError}</p>}
+                <div className="grid grid-cols-2 gap-2">
+                  <Button variant="outline" size="lg" onClick={() => { setDeleteConfirm(false); setDeleteReason('') }}>
+                    {t('cta.cancel')}
+                  </Button>
+                  <Button variant="danger" size="lg" loading={deleteBusy} icon={<Trash2 className="size-5" />} onClick={deletePersonConfirmed}>
+                    Delete
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </Sheet>

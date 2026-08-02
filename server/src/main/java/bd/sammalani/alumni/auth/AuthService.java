@@ -83,12 +83,15 @@ public class AuthService {
                     "এই নম্বরটি আগে থেকেই নিবন্ধিত। লগইন করে দেখুন।");
         }
 
-        Person person = new Person();
+        // Reuse an existing unverified row (same name + batch, no phone) rather
+        // than creating a new one on every abandoned attempt. Without this, the
+        // same person submitting the form five times before verifying would
+        // produce five SEEDED rows — all visible in batch search.
+        Person person = people.findUnverifiedByNameAndBatch(name.strip(), batchYear)
+                .orElseGet(Person::new);
         person.setName(name.strip());
         person.setNameBn(nameBn == null || nameBn.isBlank() ? null : nameBn.strip());
         person.setBatchYear(batchYear);
-        // Not CLAIMED yet: the number is unproven until the code comes back, and
-        // a coordinator still has to say this is really a 1996 alum.
         person.setStatus(PersonStatus.SEEDED);
         people.save(person);
 

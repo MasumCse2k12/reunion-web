@@ -18,6 +18,7 @@ import bd.sammalani.alumni.admin.AdminDtos.AdminAccountDto;
 import bd.sammalani.alumni.admin.AdminDtos.AdminLoginResponse;
 import bd.sammalani.alumni.admin.AdminDtos.AdminStatsDto;
 import bd.sammalani.alumni.admin.AdminDtos.CreateAdminRequest;
+import bd.sammalani.alumni.admin.AdminDtos.DeletePersonRequest;
 import bd.sammalani.alumni.admin.AdminDtos.LoginRequest;
 import bd.sammalani.alumni.admin.AdminDtos.SetPasswordRequest;
 import bd.sammalani.alumni.admin.AdminDtos.UpdateAdminRequest;
@@ -36,6 +37,7 @@ public class AdminController {
     private final AdminAuthService auth;
     private final AdminStatsService stats;
     private final AdminAccountService accounts;
+    private final AdminPersonService personService;
 
     @PostMapping("/auth/login")
     @SecurityRequirements
@@ -92,6 +94,24 @@ public class AdminController {
     public void setPassword(@PathVariable("id") UUID id, @Valid @RequestBody SetPasswordRequest request) {
         accounts.setPassword(id, request.password());
     }
+
+    /* ---------------- people ---------------- */
+
+    @DeleteMapping("/people/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Soft-delete a person",
+            description = """
+                    Sets deleted_at on the person row. Hibernate excludes the row from every \
+                    subsequent query automatically. The deletion is reversible from the tombstone \
+                    list. A GROUP_ADMIN may only delete persons in their assigned batches; a \
+                    SUPER_ADMIN has no such restriction. An optional reason is recorded in the \
+                    audit trail.""")
+    public void deletePerson(@PathVariable("id") UUID id,
+                             @RequestBody(required = false) DeletePersonRequest request) {
+        personService.deletePerson(id, request != null ? request.reason() : null);
+    }
+
+    /* ---------------- accounts: super admin only ---------------- */
 
     @DeleteMapping("/accounts/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
