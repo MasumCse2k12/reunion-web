@@ -38,7 +38,7 @@ android {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            buildConfigField "String", "WEB_APP_URL", '"https://alumni.sammalani.edu.bd"'
+            buildConfigField "String", "WEB_APP_URL", '"http://103.165.162.229:8092"'
         }
     }
 
