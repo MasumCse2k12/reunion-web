@@ -109,9 +109,8 @@ pipeline {
                         // Writing .env.production here (not committed to git) lets
                         // the Dockerfile pick it up via `COPY . .` without any
                         // ARG/ENV changes to the Dockerfile itself.
-                        sh 'printf "VITE_API_BASE_URL=%s\\n" "$VITE_API_BASE_URL" > web/.env.production'
                         dir('web') {
-                            sh 'docker build -t ${WEB_IMAGE}:latest .'
+                            sh 'docker build --no-cache --build-arg VITE_API_BASE_URL="${VITE_API_BASE_URL}" -t ${WEB_IMAGE}:latest .'
                         }
                     }
                 }
