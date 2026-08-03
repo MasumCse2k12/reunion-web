@@ -396,7 +396,7 @@ export const NOTICES = [
 export const TEACHERS = [
   { id: 't1', name: 'Nasrin Nahar', nameBn: 'নাসরিন নাহার', roleEn: 'Headmaster', roleBn: 'প্রধান শিক্ষক', memorial: false },
   { id: 't2', name: 'Dipesh Saha', nameBn: 'দীপেশ সাহা', roleEn: 'Assistant Teacher', roleBn: 'সহকারী শিক্ষক', memorial: false },
-  { id: 't3', name: 'Shakera Khatun', nameBn: 'শাকেরা খাতুন', roleEn: 'Assistant Teacher', roleBn: 'সহকারী শিক্ষক', memorial: false },
+  { id: 't3', name: 'Shakara Khatun', nameBn: 'সাকেরা খাতুন', roleEn: 'Assistant Teacher', roleBn: 'সহকারী শিক্ষক', memorial: false },
   { id: 't4', name: 'Sanjoy Sarker', nameBn: 'সঞ্জয় সরকার', roleEn: 'Assistant Teacher', roleBn: 'সহকারী শিক্ষক', memorial: false },
   {
     id: 't5',

@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, BadgeCheck, Clock, Layers, Wallet, XCircle } from 'lucide-react'
 import { adminApi, type AdminStats, type Application } from '../../lib/api'
-import { adminScopeYears } from '../../mock/data'
 import { useAdmin } from '../../lib/adminStore'
+import { batchScope } from '../../lib/scope'
 import { useApp } from '../../lib/store'
 import { Avatar, Badge, Card, SectionTitle, Spinner } from '../../components/ui'
 
@@ -21,7 +21,22 @@ export default function AdminOverview() {
 
   if (!stats || !admin) return <Spinner label={t('common.loading')} />
 
-  const scope = adminScopeYears(admin)
+  const scope = batchScope(admin.role, admin.batches)
+
+  /**
+   * The header names the batches this page is counting. A group admin with
+   * nothing assigned is told so — it used to fall through to "All batches",
+   * which is the opposite of the truth and the reason empty tiles looked like
+   * a data problem rather than a missing assignment.
+   */
+  const scopeLabel =
+    scope.kind === 'ALL'
+      ? `${t('admin.scopeAll')} · ${n(stats.batchesCovered)}`
+      : scope.kind === 'NONE'
+        ? t('admin.scopeNone')
+        : scope.kind === 'RANGE'
+          ? `${t('admin.scopeBatches')} ${yr(scope.from)}–${yr(scope.to)} · ${n(scope.count)}`
+          : `${t('admin.scopeBatches')} ${scope.years.map(yr).join(', ')} · ${n(scope.count)}`
 
   const tiles = [
     { key: 'admin.pendingMembers', value: n(stats.pendingMembers), icon: Clock, tone: 'gold', to: '/admin/members' },
@@ -36,9 +51,7 @@ export default function AdminOverview() {
         <h1 className="text-2xl font-extrabold text-ink-900">{t('admin.overview')}</h1>
         <p className="mt-1 inline-flex items-center gap-1.5 text-ink-500">
           <Layers className="size-4" />
-          {scope
-            ? `${t('admin.scopeBatches')} ${yr(scope.from)}–${yr(scope.to)} · ${n(stats.batchesCovered)}`
-            : `${t('admin.scopeAll')} · ${n(stats.batchesCovered)}`}
+          {scopeLabel}
         </p>
       </div>
 

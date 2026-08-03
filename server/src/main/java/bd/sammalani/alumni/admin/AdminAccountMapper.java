@@ -1,7 +1,5 @@
 package bd.sammalani.alumni.admin;
 
-import java.util.Set;
-
 import bd.sammalani.alumni.admin.AdminDtos.AdminAccountDto;
 import bd.sammalani.alumni.domain.admin.AdminCredential;
 
@@ -22,7 +20,9 @@ final class AdminAccountMapper {
                 credential.getUsername(),
                 credential.getPerson().getPhone(),
                 credential.getRole(),
-                Set.copyOf(credential.getBatches()),
+                // Ascending — the portal reads the ends of this as the ends of
+                // the assignment. See AdminSession#sorted.
+                AdminSession.sorted(credential.getBatches()),
                 credential.isActive(),
                 credential.isMustChange(),
                 credential.getCreatedAt());

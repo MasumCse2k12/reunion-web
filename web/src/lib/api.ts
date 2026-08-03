@@ -716,6 +716,16 @@ export const api = {
 /* Admin API                                                            */
 /* ================================================================== */
 
+/**
+ * `batches` arrives from a Java `Set`, so its order is whatever the JVM felt
+ * like. Everything that renders a scope — the account card, the edit form, the
+ * overview header — reads the ends of this array as the ends of the assignment,
+ * so it is sorted once, here, rather than at each of those three call sites.
+ */
+function mapAdminAccount(raw: AdminAccountRaw): AdminAccount {
+  return { ...raw, batches: [...(raw.batches ?? [])].sort((a, b) => a - b) }
+}
+
 export const adminApi = {
   /* session */
 
@@ -726,7 +736,7 @@ export const adminApi = {
       { username, password },
     )
     localStorage.setItem(ADMIN_ACCESS, r.accessToken)
-    return r.admin
+    return mapAdminAccount(r.admin)
   },
 
   async logout(): Promise<void> {
@@ -741,7 +751,7 @@ export const adminApi = {
 
   async me(): Promise<AdminAccount | null> {
     try {
-      return await adminHttp<AdminAccount>('GET', '/api/v1/admin/me')
+      return mapAdminAccount(await adminHttp<AdminAccountRaw>('GET', '/api/v1/admin/me'))
     } catch {
       return null
     }
@@ -809,7 +819,7 @@ export const adminApi = {
   /* admin accounts (super admin only) */
 
   async admins(): Promise<AdminAccount[]> {
-    return adminHttp<AdminAccount[]>('GET', '/api/v1/admin/accounts')
+    return (await adminHttp<AdminAccountRaw[]>('GET', '/api/v1/admin/accounts')).map(mapAdminAccount)
   },
 
   async createAdmin(input: {
@@ -821,14 +831,14 @@ export const adminApi = {
     role: AdminRole
     batches: number[]
   }): Promise<AdminAccount> {
-    return adminHttp<AdminAccount>('POST', '/api/v1/admin/accounts', input)
+    return mapAdminAccount(await adminHttp<AdminAccountRaw>('POST', '/api/v1/admin/accounts', input))
   },
 
   async updateAdmin(
     id: string,
     patch: { name?: string; nameBn?: string; phone?: string; batches?: number[]; active?: boolean },
   ): Promise<AdminAccount> {
-    return adminHttp<AdminAccount>('PATCH', `/api/v1/admin/accounts/${id}`, patch)
+    return mapAdminAccount(await adminHttp<AdminAccountRaw>('PATCH', `/api/v1/admin/accounts/${id}`, patch))
   },
 
   async setPassword(id: string, password: string): Promise<void> {

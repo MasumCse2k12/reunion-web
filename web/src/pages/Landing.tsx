@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowRight, CalendarDays, MapPin, Phone, Search, Sparkles } from 'lucide-react'
+import { ArrowRight, CalendarDays, LayoutDashboard, LogIn, MapPin, Phone, Search, Sparkles, UserPlus } from 'lucide-react'
 import { useApp } from '../lib/store'
 import { api, CONTACT_PHONE, EVENT, type Batch, type Notice } from '../lib/api'
 import { SCHOOL, TEACHERS } from '../mock/data'
@@ -20,6 +20,50 @@ function useCountdown(target: string) {
     mins: Math.floor((diff / 60000) % 60),
     secs: Math.floor((diff / 1000) % 60),
   }
+}
+
+/**
+ * Log in / Register sitting side by side. A visitor who has never signed up
+ * should not have to guess that "Find my name" is the way in, so the register
+ * action is named plainly and given the loud colour.
+ * `stacked` renders them as two equal full-width buttons for the phone row.
+ */
+function AuthActions({ stacked }: { stacked?: boolean }) {
+  const { t, user } = useApp()
+  const size = stacked ? 'md' : 'sm'
+
+  // The gold variant draws no border, the translucent one draws 2px. Left alone
+  // that is a 4px height difference between two buttons sitting side by side, so
+  // gold gets a transparent border of the same width to match. `h-full` lets each
+  // button fill its stretched grid cell in the stacked row.
+  const shell = cx('border-2 border-transparent', stacked && 'h-full')
+  const quiet = cx('border-2 border-white/25 bg-white/10 text-white hover:bg-white/20', stacked && 'h-full')
+  const linkCx = cx(stacked && 'flex')
+
+  if (user) {
+    return (
+      <Link to="/app" className={linkCx}>
+        <Button size={size} full={stacked} icon={<LayoutDashboard className="size-4" />} className={quiet}>
+          {t('nav.dashboard')}
+        </Button>
+      </Link>
+    )
+  }
+
+  return (
+    <>
+      <Link to="/login" className={linkCx}>
+        <Button size={size} full={stacked} icon={<LogIn className="size-4" />} className={quiet}>
+          {t('nav.login')}
+        </Button>
+      </Link>
+      <Link to="/signup" className={linkCx}>
+        <Button size={size} full={stacked} variant="gold" icon={<UserPlus className="size-4" />} className={shell}>
+          {t('nav.signup')}
+        </Button>
+      </Link>
+    </>
+  )
 }
 
 export default function Landing() {
@@ -61,14 +105,21 @@ export default function Landing() {
         <div className="relative mx-auto max-w-6xl px-4 py-4">
           <div className="flex items-center justify-between gap-4">
             <SchoolMark dark />
-            <div className="flex items-center gap-2">
+            <div className="flex shrink-0 items-center gap-2">
               <LangToggle dark />
-              <Link to={user ? '/app' : '/login'} className="hidden sm:block">
-                <Button variant="ghost" size="sm" className="text-white hover:bg-white/10">
-                  {user ? t('nav.dashboard') : t('nav.login')}
-                </Button>
-              </Link>
+              <div className="hidden items-center gap-2 sm:flex">
+                <AuthActions />
+              </div>
             </div>
+          </div>
+
+          {/* On a phone the crest and the language toggle already fill the row,
+              so the same two actions get their own full-width row underneath.
+              A 2-column grid rather than flex-1: `নিবন্ধন করুন` is much wider than
+              `লগইন`, and flex items refuse to shrink under their content, which
+              would hand the register button the larger half. */}
+          <div className={cx('mt-3 grid gap-2 sm:hidden', user ? 'grid-cols-1' : 'grid-cols-2')}>
+            <AuthActions stacked />
           </div>
         </div>
 

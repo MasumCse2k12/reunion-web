@@ -3,6 +3,7 @@ import { KeyRound, Pencil, Plus, ShieldCheck, Trash2, UserCog } from 'lucide-rea
 import { adminApi, ApiError, type AdminAccount, type AdminRole } from '../../lib/api'
 import { SCHOOL } from '../../mock/data'
 import { useAdmin } from '../../lib/adminStore'
+import { batchScope, isRangeExpressible } from '../../lib/scope'
 import { useApp } from '../../lib/store'
 import { Avatar, Badge, Button, Card, Field, Input, SectionTitle, Select, Sheet, Spinner, cx } from '../../components/ui'
 
@@ -139,6 +140,25 @@ export default function AdminAccounts() {
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }))
 
+  /** What the badge says. A scope of nothing says so, rather than reading as everything. */
+  function scopeLabel(a: AdminAccount): string {
+    const scope = batchScope(a.role, a.batches)
+    switch (scope.kind) {
+      case 'ALL':
+        return t('admin.scopeAll')
+      case 'NONE':
+        return t('admin.scopeNone')
+      case 'RANGE':
+        return scope.count === 1 ? yr(scope.from) : `${yr(scope.from)}–${yr(scope.to)} · ${n(scope.count)}`
+      // Not a range: naming the years is the only honest short form.
+      case 'LIST':
+        return `${scope.years.map(yr).join(', ')} · ${n(scope.count)}`
+    }
+  }
+
+  /** Set when the open account's years have gaps that the from/to boxes cannot keep. */
+  const editingGaps = editing && !isRangeExpressible(batchScope(editing.role, editing.batches))
+
   return (
     <div className="space-y-5">
       <SectionTitle
@@ -175,11 +195,7 @@ export default function AdminAccounts() {
               </div>
               <div className="mt-1 flex flex-wrap gap-1.5">
                 <Badge tone={a.role === 'SUPER_ADMIN' ? 'gold' : 'green'}>{t(`admin.role${a.role}` as never)}</Badge>
-                <Badge tone="neutral">
-                  {a.role === 'SUPER_ADMIN'
-                    ? t('admin.scopeAll')
-                    : `${yr(a.batches[0])}–${yr(a.batches[a.batches.length - 1])}`}
-                </Badge>
+                <Badge tone="neutral">{scopeLabel(a)}</Badge>
                 {!a.active && <Badge tone="red">{t('admin.disabled')}</Badge>}
               </div>
             </div>
@@ -308,10 +324,29 @@ export default function AdminAccounts() {
           </Field>
 
           {editing?.role === 'GROUP_ADMIN' && (
-            <Field label={t('admin.assignBatches')}>
+            <Field
+              label={t('admin.assignBatches')}
+              hint={editingGaps ? t('admin.scopeGapWarning') : undefined}
+            >
               <div className="grid grid-cols-2 gap-2">
-                <Input type="number" value={form.from} onChange={set('from')} className="tabular-nums" />
-                <Input type="number" value={form.to} onChange={set('to')} className="tabular-nums" />
+                <Input
+                  type="number"
+                  value={form.from}
+                  onChange={set('from')}
+                  min={SCHOOL.firstBatch}
+                  max={SCHOOL.lastBatch}
+                  className="tabular-nums"
+                  aria-label={t('admin.batchFrom')}
+                />
+                <Input
+                  type="number"
+                  value={form.to}
+                  onChange={set('to')}
+                  min={SCHOOL.firstBatch}
+                  max={SCHOOL.lastBatch}
+                  className="tabular-nums"
+                  aria-label={t('admin.batchTo')}
+                />
               </div>
             </Field>
           )}

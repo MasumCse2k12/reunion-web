@@ -1,7 +1,10 @@
 package bd.sammalani.alumni.admin;
 
+import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import bd.sammalani.alumni.domain.admin.AdminCredential;
 import bd.sammalani.alumni.domain.admin.AdminRole;
@@ -32,9 +35,24 @@ public record AdminSession(
                 credential.getPerson().getNameBn(),
                 credential.getUsername(),
                 credential.getRole(),
-                Set.copyOf(credential.getBatches()),
+                sorted(credential.getBatches()),
                 credential.isActive(),
                 credential.isMustChange());
+    }
+
+    /**
+     * Ascending, and in a set that keeps that order.
+     * <p>
+     * {@code Set.copyOf} would be the obvious call here and it is the wrong one:
+     * its iteration order is deliberately randomised per JVM, so the years reach
+     * the portal shuffled. The portal reads the first and last element as the
+     * ends of the assignment — "SSC 1998–2015" on the account card, and the
+     * from/to boxes on the edit form — which is nonsense on a shuffled list and,
+     * worse, gets written back on the next save. The order is part of the
+     * contract, so it is established here rather than hoped for downstream.
+     */
+    static Set<Integer> sorted(Collection<Integer> batches) {
+        return batches.stream().sorted().collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     public boolean isSuperAdmin() {
