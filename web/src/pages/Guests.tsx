@@ -17,11 +17,11 @@ import {
 import {
   api,
   ApiError,
-  TICKET_TYPES,
   type Application,
   type GuestRelation,
   type PaymentMethod,
   type Registration,
+  type TicketType,
 } from '../lib/api'
 import { PAYMENT_METHODS, TSHIRT_SIZES } from '../mock/data'
 import { useApp } from '../lib/store'
@@ -48,6 +48,8 @@ export default function Guests() {
   const [reg, setReg] = useState<Registration | null>(null)
   const [app, setApp] = useState<Application | null>(null)
   const [coordinators, setCoordinators] = useState<Coordinator[]>([])
+  /** Prices as the committee has them today, not as they were when this shipped. */
+  const [tickets, setTickets] = useState<TicketType[]>([])
   const [loading, setLoading] = useState(true)
   const [sheet, setSheet] = useState(false)
   const [paySheet, setPaySheet] = useState(false)
@@ -76,13 +78,17 @@ export default function Guests() {
       api.getRegistration(),
       api.myApplication(),
       user ? api.coordinatorsFor(user.batchYear) : Promise.resolve([] as Coordinator[]),
-    ]).then(([rResult, aResult, cResult]) => {
+      api.ticketTypes(),
+    ]).then(([rResult, aResult, cResult, tResult]) => {
       const r = rResult.status === 'fulfilled' ? rResult.value : null
       const a = aResult.status === 'fulfilled' ? aResult.value : null
       const c = cResult.status === 'fulfilled' ? cResult.value : []
       setReg(r)
       setApp(a)
       setCoordinators(c)
+      // Left empty if the fetch failed. Every price then renders as a dash —
+      // the one number this screen must never guess at is a price.
+      setTickets(tResult.status === 'fulfilled' ? tResult.value : [])
       setPayTo(c[0]?.id ?? '')
       if (r) {
         setMyTshirt(r.tshirtSize)
@@ -92,8 +98,15 @@ export default function Guests() {
     })
   }, [user])
 
-  const ticket = (id: string) => TICKET_TYPES.find((x) => x.id === id) ?? TICKET_TYPES.find((x) => x.id === 'tt-guest')!
+  const ticket = (id: string) => tickets.find((x) => x.id === id) ?? tickets.find((x) => x.id === 'tt-guest')
   const previewTicket = ticketFor(relation, age ? Number(age) : undefined)
+
+  /**
+   * A price is either the one the server sent or a dash. There is no third
+   * option: an invented number here is a number somebody sends by bKash.
+   */
+  const priceOf = (tt?: TicketType) => (!tt ? '—' : tt.amount === 0 ? t('guests.free') : money(tt.amount))
+  const nameOf = (tt?: TicketType) => (!tt ? '—' : lang === 'bn' ? tt.nameBn : tt.nameEn)
 
   async function ensureRegistration() {
     if (reg) return reg
@@ -152,6 +165,12 @@ export default function Guests() {
 
   async function reportPayment() {
     setPayError('')
+    // No price on screen means no price to report. Better to say so than to
+    // send a number this component made up.
+    if (total === null) {
+      setPayError(lang === 'bn' ? 'দাম লোড হয়নি। পাতাটি আবার খুলুন।' : 'Prices did not load. Please reopen the page.')
+      return
+    }
     setBusy(true)
     try {
       const updated = await api.reportPayment({
@@ -174,7 +193,9 @@ export default function Guests() {
 
   const guests = reg?.guests ?? []
   const alumniTicket = ticket('tt-alumni')
-  const total = (reg?.amountDue ?? alumniTicket.amount) || alumniTicket.amount
+  // The server's figure once a registration exists — it is the one that will be
+  // collected. Before that, the fetched price of the member's own seat.
+  const total = reg?.amountDue ?? alumniTicket?.amount ?? null
   const submitted = reg?.status === 'SUBMITTED' || reg?.status === 'APPROVED'
   const approved = app?.memberStatus === 'APPROVED'
   const rejected = app?.memberStatus === 'REJECTED'
@@ -235,10 +256,14 @@ export default function Guests() {
         </SectionTitle>
 
         <div className="flex items-center justify-between gap-3 rounded-xl bg-brand-50 px-4 py-3">
-          <span className="font-bold text-brand-800">{lang === 'bn' ? alumniTicket.nameBn : alumniTicket.nameEn}</span>
-          <span className="font-extrabold tabular-nums text-brand-800">{money(alumniTicket.amount)}</span>
+          <span className="font-bold text-brand-800">{nameOf(alumniTicket)}</span>
+          <span className="font-extrabold tabular-nums text-brand-800">{priceOf(alumniTicket)}</span>
         </div>
-        <p className="mt-1.5 text-sm text-ink-400">{lang === 'bn' ? alumniTicket.noteBn : alumniTicket.noteEn}</p>
+        {alumniTicket && (
+          <p className="mt-1.5 text-sm text-ink-400">
+            {lang === 'bn' ? alumniTicket.noteBn : alumniTicket.noteEn}
+          </p>
+        )}
 
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <Field label={t('guests.tshirt')}>
@@ -331,10 +356,10 @@ export default function Guests() {
                   </div>
                   <div className="shrink-0 text-right">
                     <div className="font-extrabold tabular-nums text-ink-900">
-                      {tt.amount === 0 ? (
+                      {tt?.amount === 0 ? (
                         <span className="text-brand-600">{t('guests.free')}</span>
                       ) : (
-                        money(tt.amount)
+                        priceOf(tt)
                       )}
                     </div>
                     {!locked && (
@@ -365,8 +390,8 @@ export default function Guests() {
 
         <div className="space-y-2 border-b border-white/15 pb-3">
           <div className="flex justify-between gap-3">
-            <span className="text-white/75">{lang === 'bn' ? alumniTicket.nameBn : alumniTicket.nameEn}</span>
-            <span className="font-semibold tabular-nums">{money(alumniTicket.amount)}</span>
+            <span className="text-white/75">{nameOf(alumniTicket)}</span>
+            <span className="font-semibold tabular-nums">{priceOf(alumniTicket)}</span>
           </div>
           {guests.map((g) => {
             const tt = ticket(g.ticketTypeId)
@@ -375,9 +400,7 @@ export default function Guests() {
                 <span className="min-w-0 truncate text-white/75">
                   {g.name} <span className="text-white/40">· {t(`guests.rel.${g.relation}` as never)}</span>
                 </span>
-                <span className="shrink-0 font-semibold tabular-nums">
-                  {tt.amount === 0 ? t('guests.free') : money(tt.amount)}
-                </span>
+                <span className="shrink-0 font-semibold tabular-nums">{priceOf(tt)}</span>
               </div>
             )
           })}
@@ -385,7 +408,9 @@ export default function Guests() {
 
         <div className="mt-3 flex items-end justify-between gap-3">
           <span className="text-lg font-bold">{t('guests.total')}</span>
-          <span className="text-3xl font-extrabold tabular-nums text-gold-300">{money(total)}</span>
+          <span className="text-3xl font-extrabold tabular-nums text-gold-300">
+            {total === null ? '—' : money(total)}
+          </span>
         </div>
 
         {!locked ? (
@@ -533,11 +558,9 @@ export default function Guests() {
 
           {/* Live price feedback — no surprises later */}
           <div className="flex items-center justify-between rounded-xl bg-gold-50 px-4 py-3 ring-1 ring-gold-200">
-            <span className="font-semibold text-gold-700">
-              {lang === 'bn' ? ticket(previewTicket).nameBn : ticket(previewTicket).nameEn}
-            </span>
+            <span className="font-semibold text-gold-700">{nameOf(ticket(previewTicket))}</span>
             <span className="text-xl font-extrabold tabular-nums text-gold-700">
-              {ticket(previewTicket).amount === 0 ? t('guests.free') : money(ticket(previewTicket).amount)}
+              {priceOf(ticket(previewTicket))}
             </span>
           </div>
 

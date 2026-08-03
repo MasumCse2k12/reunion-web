@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { BadgeCheck, ExternalLink, LayoutDashboard, LogOut, ShieldCheck, UserCog, Wallet } from 'lucide-react'
+import { BadgeCheck, ExternalLink, LayoutDashboard, LogOut, ShieldCheck, UserCheck, UserCog, Wallet } from 'lucide-react'
 import { adminScopeYears } from '../../mock/data'
 import { useAdmin } from '../../lib/adminStore'
 import { useApp } from '../../lib/store'
@@ -8,6 +8,9 @@ import { cx } from '../../components/ui'
 
 const NAV = [
   { to: '/admin', key: 'admin.overview', icon: LayoutDashboard, end: true, superOnly: false },
+  // Identity first: it is the question that comes before "are they coming?", and
+  // it is the one a claimed name sits in until somebody answers it.
+  { to: '/admin/claims', key: 'claims.nav', icon: UserCheck, end: false, superOnly: false },
   { to: '/admin/members', key: 'admin.members', icon: BadgeCheck, end: false, superOnly: false },
   { to: '/admin/payments', key: 'admin.payments', icon: Wallet, end: false, superOnly: false },
   { to: '/admin/accounts', key: 'admin.accounts', icon: UserCog, end: false, superOnly: true },

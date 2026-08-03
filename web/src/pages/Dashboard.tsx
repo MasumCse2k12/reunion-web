@@ -128,20 +128,27 @@ export default function Dashboard() {
             ) : null}
           </div>
 
+          {/* Both come from the database, and either can be unset while the
+              committee is still deciding. An unset one is left out rather than
+              rendered as "Invalid Date". */}
           <div className="mt-4 space-y-1.5 text-white/80">
-            <div className="flex items-center gap-2">
-              <CalendarDays className="size-5 shrink-0 text-gold-300" />
-              {new Date(event.date).toLocaleDateString(lang === 'bn' ? 'bn-BD' : 'en-GB', {
-                weekday: 'long',
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric',
-              })}
-            </div>
-            <div className="flex items-center gap-2">
-              <MapPin className="size-5 shrink-0 text-gold-300" />
-              {lang === 'bn' ? event.venueBn : event.venueEn}
-            </div>
+            {event.date && (
+              <div className="flex items-center gap-2">
+                <CalendarDays className="size-5 shrink-0 text-gold-300" />
+                {new Date(event.date).toLocaleDateString(lang === 'bn' ? 'bn-BD' : 'en-GB', {
+                  weekday: 'long',
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                })}
+              </div>
+            )}
+            {(lang === 'bn' ? event.venueBn : event.venueEn) && (
+              <div className="flex items-center gap-2">
+                <MapPin className="size-5 shrink-0 text-gold-300" />
+                {lang === 'bn' ? event.venueBn : event.venueEn}
+              </div>
+            )}
           </div>
 
           <div className="mt-5 border-t border-white/15 pt-4">

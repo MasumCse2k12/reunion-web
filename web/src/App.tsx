@@ -38,6 +38,7 @@ import Profile from './pages/Profile'
 import AdminLogin from './pages/admin/AdminLogin'
 import AdminLayout from './pages/admin/AdminLayout'
 import AdminOverview from './pages/admin/AdminOverview'
+import AdminClaims from './pages/admin/AdminClaims'
 import AdminMembers from './pages/admin/AdminMembers'
 import AdminPayments from './pages/admin/AdminPayments'
 import AdminAccounts from './pages/admin/AdminAccounts'
@@ -100,6 +101,7 @@ export default function App() {
               }
             >
               <Route index element={<AdminOverview />} />
+              <Route path="claims" element={<AdminClaims />} />
               <Route path="members" element={<AdminMembers />} />
               <Route path="payments" element={<AdminPayments />} />
               <Route path="accounts" element={<AdminAccounts />} />

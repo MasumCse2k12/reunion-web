@@ -8,8 +8,6 @@
  */
 
 import {
-  TICKET_TYPES,
-  EVENT,
   type AdminRole,
   type Application,
   type Batch,
@@ -21,7 +19,9 @@ import {
   type PaymentStatus,
   type Person,
   type Registration,
+  type Review,
   type ReviewStatus,
+  type TicketType,
 } from '../mock/data'
 
 const BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:8090/smbc'
@@ -226,6 +226,43 @@ type ApplicationRaw = {
   payment?: PaymentRaw
   paymentReview?: ReviewRaw
 }
+type TicketTypeRaw = {
+  code: string
+  name: string
+  nameBn?: string
+  note?: string
+  noteBn?: string
+  amount: number
+  relation?: GuestRelation
+}
+type EventRaw = {
+  slug: string
+  title: string
+  titleBn?: string
+  subtitle?: string
+  subtitleBn?: string
+  startsAt?: string
+  endsAt?: string
+  venue?: string
+  venueBn?: string
+  status: string
+  ticketTypes: TicketTypeRaw[]
+}
+type ClaimRaw = {
+  personId: string
+  name: string
+  nameBn?: string
+  batchYear?: number
+  phone?: string
+  email?: string
+  gender?: Gender
+  occupation?: string
+  city?: string
+  status: ClaimStatus
+  claimedAt: string
+  hasRegistration: boolean
+  lastReview?: ReviewRaw
+}
 type CursorPageRaw<T> = { items: T[]; nextCursor: string | null; total: number }
 type BulkRaw = { updated: ApplicationRaw[]; skipped: Array<{ id: string; name: string; reason: string; reasonBn: string }> }
 
@@ -302,6 +339,49 @@ function mapRegistration(r: RegistrationRaw): Registration {
 
 function mapReview(rv: ReviewRaw) {
   return { adminId: '', adminName: rv.adminName, at: rv.at, note: rv.note }
+}
+
+/**
+ * A price from the database, in the shape the screens already speak.
+ *
+ * The server identifies a ticket by `code` and the app by a `tt-*` id, and
+ * `ticketIdFromCode` is the one place that bridges them. Only the identity is
+ * translated — the amount is taken as sent, never recomputed here.
+ */
+function mapTicketType(t: TicketTypeRaw): TicketType {
+  return {
+    id: ticketIdFromCode(t.code),
+    nameEn: t.name,
+    nameBn: t.nameBn || t.name,
+    amount: Number(t.amount),
+    noteEn: t.note ?? '',
+    noteBn: t.noteBn || t.note || '',
+    relation: t.relation,
+  }
+}
+
+/**
+ * Bilingual fields are nullable on the wire — a committee that has not typed the
+ * Bangla title yet should get the English one on a Bangla screen, not a blank.
+ */
+function mapEvent(e: EventRaw): EventInfo {
+  return {
+    slug: e.slug,
+    titleEn: e.title,
+    titleBn: e.titleBn || e.title,
+    subtitleEn: e.subtitle ?? '',
+    subtitleBn: e.subtitleBn || e.subtitle || '',
+    date: e.startsAt ?? '',
+    endDate: e.endsAt,
+    venueEn: e.venue ?? '',
+    venueBn: e.venueBn || e.venue || '',
+    status: e.status,
+    ticketTypes: e.ticketTypes.map(mapTicketType),
+  }
+}
+
+function mapClaim(c: ClaimRaw): Claim {
+  return { ...c, lastReview: c.lastReview ? mapReview(c.lastReview) : undefined }
 }
 
 /** Member-side Application built from a RegistrationRaw (no separate person fetch needed). */
@@ -401,7 +481,7 @@ export type AdminAccount = AdminAccountRaw
 export type DashboardData = {
   me: Person
   batch: Batch
-  event: typeof EVENT
+  event: EventInfo
   registration: Registration | null
   application: Application | null
   totals: { roster: number; claimed: number; batches: number; registeredForEvent: number; teachers: number }
@@ -414,9 +494,80 @@ export type Notice = ReturnType<typeof mapNotice>
 
 export type AdminStats = AdminStatsRaw
 
+/**
+ * `queue` picks which of the two review queues is being read. PAYMENTS is
+ * approved members only and the server enforces that — a `memberStatus` sent
+ * with it is overridden, not honoured.
+ */
+export type QueueKind = 'MEMBERS' | 'PAYMENTS'
+
 export type ApplicationFilter = {
+  queue?: QueueKind
   memberStatus?: ReviewStatus | 'ALL'
   paymentStatus?: PaymentStatus | 'ALL'
+  batchYear?: number | 'ALL'
+  query?: string
+  cursor?: string | null
+  limit?: number
+}
+
+/* ---- the event ---- */
+
+/**
+ * The reunion as the database has it — title, when, where, and what a seat
+ * costs. Field names keep the app's own shape (`titleEn`, `date`, `venueBn`)
+ * rather than the wire's, so a screen reads the same as it always did; only the
+ * source has changed.
+ */
+export type EventInfo = {
+  slug: string
+  titleEn: string
+  titleBn: string
+  subtitleEn: string
+  subtitleBn: string
+  /** ISO instant the reunion starts. */
+  date: string
+  /** ISO instant it ends, when the committee has fixed one. */
+  endDate?: string
+  venueEn: string
+  venueBn: string
+  status: string
+  ticketTypes: TicketType[]
+}
+
+/* ---- identity queue ---- */
+
+/**
+ * Where somebody sits in the identity lifecycle, which is not the same question
+ * as whether they are coming to the reunion. SEEDED is a name off the school
+ * register that nobody has claimed, so it never appears in this queue.
+ */
+export type ClaimStatus = 'CLAIMED' | 'VERIFIED' | 'REJECTED'
+
+/**
+ * Someone who has proved they hold the mobile number on their row, waiting to be
+ * told they are of the batch they say. Thinner than an Application on purpose:
+ * there may be no registration behind this at all.
+ */
+export type Claim = {
+  personId: string
+  name: string
+  nameBn?: string
+  batchYear?: number
+  phone?: string
+  email?: string
+  gender?: Gender
+  occupation?: string
+  city?: string
+  status: ClaimStatus
+  claimedAt: string
+  /** Whether a registration for this reunion is waiting behind the claim. */
+  hasRegistration: boolean
+  lastReview?: Review
+}
+
+export type ClaimFilter = {
+  status?: ClaimStatus
   batchYear?: number | 'ALL'
   query?: string
   cursor?: string | null
@@ -444,9 +595,14 @@ export type {
   PaymentStatus,
   Person,
   Registration,
+  Review,
   ReviewStatus,
+  TicketType,
 }
-export { TICKET_TYPES, EVENT }
+// Neither TICKET_TYPES nor EVENT is re-exported. They are fixtures, and
+// re-exporting them from the API client is what let screens read compiled-in
+// prices and dates while believing they came from the server. Both now come
+// from `api.event()`.
 
 /* ------------------------------------------------------------------ */
 /* Member API                                                           */
@@ -545,11 +701,12 @@ export const api = {
   /* dashboard — aggregated from multiple endpoints */
 
   async dashboard(): Promise<DashboardData> {
-    const [meRaw, allBatches, totals, noticesRaw] = await Promise.all([
+    const [meRaw, allBatches, totals, noticesRaw, event] = await Promise.all([
       memberHttp<PersonRaw>('GET', '/api/v1/me'),
       http<BatchRaw[]>('GET', '/api/v1/batches'),
       http<TotalsRaw>('GET', '/api/v1/batches/totals'),
       http<NoticeRaw[]>('GET', '/api/v1/notices'),
+      this.event(),
     ])
     const me = mapPerson(meRaw)
     const batch = allBatches.find((b) => b.year === me.batchYear) ?? allBatches[allBatches.length - 1]
@@ -573,7 +730,7 @@ export const api = {
     return {
       me,
       batch,
-      event: EVENT,
+      event,
       registration,
       application,
       totals: { roster: totals.roster, claimed: totals.claimed, batches: totals.batches, registeredForEvent: 0, teachers: 0 },
@@ -581,6 +738,27 @@ export const api = {
       missingFromBatch,
       profileCompleteness: completeness(me, registration),
     }
+  },
+
+  /* the event and what a seat costs */
+
+  /**
+   * The reunion and its prices, from the database rather than from a constant in
+   * this bundle.
+   *
+   * The committee changes a date or a price by editing a row, and the server has
+   * always priced registrations from that table — so a copy compiled into the
+   * app is a copy that goes wrong silently: itemised lines that no longer add up
+   * to the total the member is asked to pay, or a landing page counting down to
+   * a day the reunion is no longer on. Public, because both are the first things
+   * somebody asks and they ask before they log in.
+   */
+  async event(): Promise<EventInfo> {
+    return mapEvent(await http<EventRaw>('GET', '/api/v1/events/current'))
+  },
+
+  async ticketTypes(): Promise<TicketType[]> {
+    return (await api.event()).ticketTypes
   },
 
   /* notices */
@@ -767,6 +945,7 @@ export const adminApi = {
 
   async applications(filter: ApplicationFilter = {}): Promise<Page<Application>> {
     const params = new URLSearchParams()
+    if (filter.queue) params.set('queue', filter.queue)
     if (filter.memberStatus && filter.memberStatus !== 'ALL') params.set('memberStatus', filter.memberStatus)
     if (filter.paymentStatus && filter.paymentStatus !== 'ALL') params.set('paymentStatus', filter.paymentStatus)
     if (filter.batchYear && filter.batchYear !== 'ALL') params.set('batchYear', String(filter.batchYear))
@@ -780,6 +959,33 @@ export const adminApi = {
 
   async myBatches(): Promise<number[]> {
     return adminHttp<number[]>('GET', '/api/v1/admin/applications/batch-years')
+  },
+
+  /* identity queue */
+
+  async claims(filter: ClaimFilter = {}): Promise<Page<Claim>> {
+    const params = new URLSearchParams()
+    if (filter.status) params.set('status', filter.status)
+    if (filter.batchYear && filter.batchYear !== 'ALL') params.set('batchYear', String(filter.batchYear))
+    if (filter.query?.trim()) params.set('q', filter.query.trim())
+    if (filter.cursor) params.set('cursor', filter.cursor)
+    if (filter.limit) params.set('limit', String(filter.limit))
+    const qs = params.toString()
+    const raw = await adminHttp<CursorPageRaw<ClaimRaw>>('GET', `/api/v1/admin/claims${qs ? '?' + qs : ''}`)
+    return { items: raw.items.map(mapClaim), nextCursor: raw.nextCursor, total: raw.total }
+  },
+
+  /** Decides who someone is — not whether their registration is approved. */
+  async reviewClaim(personId: string, verdict: 'VERIFIED' | 'REJECTED', note?: string): Promise<Claim> {
+    if (verdict === 'REJECTED' && !note?.trim()) {
+      throw new ApiError('Write a reason before rejecting.', 'বাতিল করার আগে কারণ লিখুন।')
+    }
+    return mapClaim(
+      await adminHttp<ClaimRaw>('POST', `/api/v1/admin/claims/${personId}/verify`, {
+        decision: verdict,
+        note: note?.trim(),
+      }),
+    )
   },
 
   /* decisions */

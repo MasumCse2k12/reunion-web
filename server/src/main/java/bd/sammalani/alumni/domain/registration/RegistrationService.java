@@ -141,6 +141,15 @@ public class RegistrationService {
             throw ApiException.badRequest("not_submitted",
                     "Send your registration for approval first.", "আগে নিবন্ধনটি অনুমোদনের জন্য পাঠান।");
         }
+        // Nobody should be sending money against a seat that was refused or given
+        // up. A rejected registration is editable, so the way back is to correct
+        // it and resubmit — not to pay into a queue no coordinator is working.
+        if (registration.getStatus() == RegistrationStatus.REJECTED
+                || registration.getStatus() == RegistrationStatus.CANCELLED) {
+            throw ApiException.badRequest("not_approved",
+                    "This registration is not active. Please correct and send it again first.",
+                    "এই নিবন্ধনটি সক্রিয় নেই। আগে সংশোধন করে আবার পাঠান।");
+        }
         if (registration.getPaymentStatus() == PaymentStatus.CONFIRMED) {
             throw ApiException.badRequest("already_confirmed",
                     "Your payment is already confirmed.", "আপনার পেমেন্ট আগেই নিশ্চিত হয়েছে।");

@@ -56,6 +56,61 @@ function paymentTone(s: PaymentStatus) {
   return s === 'CONFIRMED' ? 'green' : s === 'REJECTED' ? 'red' : s === 'REPORTED' ? 'gold' : 'muted'
 }
 
+/**
+ * A row nobody may act on again in this queue: the member decision is made, or
+ * the money is confirmed. Settled rows are never bulk-selectable — a super admin
+ * can still overturn one, but that is a deliberate, single act on an open row,
+ * not something a select-all over an ALL filter can sweep across a whole batch.
+ */
+function isSettled(a: Application, mode: Mode) {
+  return mode === 'MEMBER' ? a.memberStatus !== 'PENDING' : a.paymentStatus === 'CONFIRMED'
+}
+
+/**
+ * What the server will allow on this row, mirrored so the portal greys the
+ * button out instead of letting the tap earn a 409. The API is the enforcement
+ * point; this only makes the refusal visible before it happens.
+ */
+type Decidability = {
+  approve: boolean
+  reject: boolean
+  /** Set when the row is settled — the reason both buttons are shut. */
+  settled: TKey | null
+  /** Whether this admin may overturn it, behind an explicit confirmation. */
+  overridable: boolean
+}
+
+function decidability(a: Application, mode: Mode, isSuper: boolean): Decidability {
+  if (mode === 'MEMBER') {
+    if (a.memberStatus === 'PENDING') {
+      return { approve: true, reject: true, settled: null, overridable: false }
+    }
+    // Decided. Only the opposite verdict is ever open, and only to a super admin:
+    // deciding the same way twice is never anything but a stale screen.
+    const approved = a.memberStatus === 'APPROVED'
+    return {
+      approve: isSuper && !approved,
+      reject: isSuper && approved,
+      settled: 'admin.settledMember',
+      overridable: isSuper,
+    }
+  }
+
+  if (a.paymentStatus === 'CONFIRMED') {
+    return { approve: false, reject: isSuper, settled: 'admin.settledPayment', overridable: isSuper }
+  }
+  // Rejected money is not settled — the member re-reports and the row comes back
+  // as REPORTED on its own. Only the repeat, and rejecting nothing, are refused.
+  // Money follows the seat, so confirming needs the membership granted first;
+  // rejecting stays open, which is how a wrong claim gets cleared.
+  return {
+    approve: !!a.payment && a.memberStatus === 'APPROVED',
+    reject: a.paymentStatus !== 'REJECTED' && (!!a.payment || a.paymentStatus !== 'UNPAID'),
+    settled: null,
+    overridable: false,
+  }
+}
+
 export default function ReviewQueue({ mode }: { mode: Mode }) {
   const { t, lang, n, yr, money } = useApp()
   const { isSuper } = useAdmin()
@@ -73,6 +128,8 @@ export default function ReviewQueue({ mode }: { mode: Mode }) {
   const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  /** A super admin has asked to overturn the settled row in the sheet. */
+  const [override, setOverride] = useState(false)
 
   const [deleteConfirm, setDeleteConfirm] = useState(false)
   const [deleteReason, setDeleteReason] = useState('')
@@ -101,6 +158,7 @@ export default function ReviewQueue({ mode }: { mode: Mode }) {
         batchYear,
         cursor,
         limit,
+        queue: mode === 'MEMBER' ? 'MEMBERS' : 'PAYMENTS',
         ...(mode === 'MEMBER'
           ? { memberStatus: status as ReviewStatus | 'ALL' }
           : { paymentStatus: status as PaymentStatus | 'ALL' }),
@@ -150,6 +208,12 @@ export default function ReviewQueue({ mode }: { mode: Mode }) {
   /** Payment rows with nothing reported yet cannot be confirmed — warn before, not after. */
   const unpayable = mode === 'PAYMENT' ? selectedApps.filter((a) => !a.payment).length : 0
 
+  /** The rows on screen a bulk decision could actually land on. */
+  const selectable = useMemo(() => (apps ?? []).filter((a) => !isSettled(a, mode)), [apps, mode])
+
+  /** What the sheet's buttons may do, and whether this admin can overturn it. */
+  const verdicts = useMemo(() => (open ? decidability(open, mode, isSuper) : null), [open, mode, isSuper])
+
   function toggle(id: string) {
     setSelected((prev) => {
       const next = new Set(prev)
@@ -159,7 +223,22 @@ export default function ReviewQueue({ mode }: { mode: Mode }) {
   }
 
   function toggleAll(on: boolean) {
-    setSelected(on ? new Set((apps ?? []).map((a) => a.id)) : new Set())
+    setSelected(on ? new Set(selectable.map((a) => a.id)) : new Set())
+  }
+
+  /** Open the detail sheet on a row, with every per-row decision state reset. */
+  function openRow(a: Application) {
+    setOpen(a)
+    setNote('')
+    setError('')
+    setOverride(false)
+  }
+
+  function closeRow() {
+    setOpen(null)
+    setOverride(false)
+    setDeleteConfirm(false)
+    setDeleteReason('')
   }
 
   /** How many rows to pull back after a decision — never fewer than one page. */
@@ -176,6 +255,7 @@ export default function ReviewQueue({ mode }: { mode: Mode }) {
           : await adminApi.reviewPayment(open.id, verdict === 'APPROVE' ? 'CONFIRMED' : 'REJECTED', note)
       setOpen(null)
       setNote('')
+      setOverride(false)
       // Reload rather than patch in place — the row usually leaves the current filter.
       setApps((prev) => prev?.map((a) => (a.id === updated.id ? updated : a)) ?? null)
       load(openWindow())
@@ -234,7 +314,7 @@ export default function ReviewQueue({ mode }: { mode: Mode }) {
 
   const approveLabel = mode === 'MEMBER' ? t('cta.approve') : t('cta.confirm')
   const bulkApproveLabel = mode === 'MEMBER' ? t('admin.approveSelected') : t('admin.confirmSelected')
-  const allSelected = !!apps && apps.length > 0 && selected.size === apps.length
+  const allSelected = selectable.length > 0 && selected.size === selectable.length
   const hasMore = !!nextCursor
   // "Select all" only tells the truth when everything matching is already on screen.
   const selectAllLabel = hasMore ? t('admin.selectLoaded') : t('admin.selectAll')
@@ -294,27 +374,31 @@ export default function ReviewQueue({ mode }: { mode: Mode }) {
       ) : (
         <div className="space-y-2">
           {/* Select-all header. It ticks the rows that are actually on screen — never
-              the unloaded remainder, which nobody has read. The label says so, and the
-              count next to it is loaded-of-total. */}
+              the unloaded remainder, which nobody has read, and never a settled row,
+              which no bulk decision may touch. The label says so, and the count next
+              to it is selectable-of-total. */}
           <div className="flex items-center gap-1 px-1">
             <Checkbox
               checked={allSelected}
               indeterminate={selected.size > 0 && !allSelected}
               onChange={toggleAll}
               label={selectAllLabel}
+              disabled={selectable.length === 0}
             />
             <button
               type="button"
+              disabled={selectable.length === 0}
               onClick={() => toggleAll(!allSelected)}
-              className="font-semibold text-ink-500 hover:text-ink-700"
+              className="font-semibold text-ink-500 hover:text-ink-700 disabled:opacity-40 disabled:hover:text-ink-500"
             >
-              {selectAllLabel} ({n(apps.length)}
+              {selectAllLabel} ({n(selectable.length)}
               {hasMore && ` / ${n(total)}`})
             </button>
           </div>
 
           {apps.map((a) => {
             const picked = selected.has(a.id)
+            const settled = isSettled(a, mode)
             return (
               <Card
                 key={a.id}
@@ -323,7 +407,12 @@ export default function ReviewQueue({ mode }: { mode: Mode }) {
                   picked && 'border-brand-300 bg-brand-50/60 ring-1 ring-brand-200',
                 )}
               >
-                <Checkbox checked={picked} onChange={() => toggle(a.id)} label={t('admin.selectRow')} />
+                <Checkbox
+                  checked={picked}
+                  onChange={() => toggle(a.id)}
+                  label={t('admin.selectRow')}
+                  disabled={settled}
+                />
                 <Avatar name={a.name} />
                 <div className="ml-1.5 min-w-0 flex-1">
                   <div className="truncate font-bold text-ink-900">{a.nameBn || a.name}</div>
@@ -347,15 +436,7 @@ export default function ReviewQueue({ mode }: { mode: Mode }) {
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
                   <span className="font-extrabold tabular-nums text-ink-900">{money(a.amountDue)}</span>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      setOpen(a)
-                      setNote('')
-                      setError('')
-                    }}
-                  >
+                  <Button size="sm" variant="outline" onClick={() => openRow(a)}>
                     {t('admin.details')}
                   </Button>
                 </div>
@@ -497,7 +578,7 @@ export default function ReviewQueue({ mode }: { mode: Mode }) {
       </Sheet>
 
       {/* ---------- Detail + decision ---------- */}
-      <Sheet open={!!open} onClose={() => { setOpen(null); setDeleteConfirm(false); setDeleteReason('') }} title={t('admin.details')}>
+      <Sheet open={!!open} onClose={closeRow} title={t('admin.details')}>
         {open && (
           <div className="space-y-4">
             <div className="flex items-center gap-3">
@@ -587,31 +668,63 @@ export default function ReviewQueue({ mode }: { mode: Mode }) {
               </Card>
             )}
 
-            {/* ---- Decision ---- */}
-            <Field label={t('admin.reviewNote')} error={error}>
-              <textarea
-                rows={2}
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                placeholder={t('admin.rejectReason')}
-                className="w-full rounded-xl border-2 border-paper-2 bg-white px-4 py-3 text-ink-900 placeholder:text-ink-400 focus:border-brand-400 focus:outline-none"
-              />
-            </Field>
+            {/* ---- Decision ----
+                A settled row shows why it is closed instead of two live buttons.
+                A super admin can open it, but only through this second, named
+                step — never by finding the same button already enabled. */}
+            {verdicts?.settled && !override ? (
+              <Card className="space-y-3 border-ink-400/30 bg-paper-2/60 p-4">
+                <p className="font-semibold text-ink-700">{t(verdicts.settled)}</p>
+                {verdicts.overridable ? (
+                  <Button variant="outline" size="lg" className="w-full" onClick={() => setOverride(true)}>
+                    {t('admin.override')}
+                  </Button>
+                ) : (
+                  <p className="text-sm text-ink-500">{t('admin.askSuper')}</p>
+                )}
+              </Card>
+            ) : (
+              <>
+                {override && (
+                  <Card className="flex gap-2.5 border-gold-200 bg-gold-50 p-4">
+                    <AlertTriangle className="mt-0.5 size-5 shrink-0 text-gold-700" />
+                    <p className="text-sm font-semibold text-ink-700">{t('admin.overrideWarn')}</p>
+                  </Card>
+                )}
 
-            <div className="grid grid-cols-2 gap-2">
-              <Button variant="danger" size="lg" loading={busy} icon={<X className="size-5" />} onClick={() => decide('REJECT')}>
-                {t('cta.reject')}
-              </Button>
-              <Button
-                size="lg"
-                loading={busy}
-                disabled={mode === 'PAYMENT' && !open.payment}
-                icon={<Check className="size-5" />}
-                onClick={() => decide('APPROVE')}
-              >
-                {approveLabel}
-              </Button>
-            </div>
+                <Field label={t('admin.reviewNote')} error={error}>
+                  <textarea
+                    rows={2}
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    placeholder={t('admin.rejectReason')}
+                    className="w-full rounded-xl border-2 border-paper-2 bg-white px-4 py-3 text-ink-900 placeholder:text-ink-400 focus:border-brand-400 focus:outline-none"
+                  />
+                </Field>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    variant="danger"
+                    size="lg"
+                    loading={busy}
+                    disabled={!verdicts?.reject}
+                    icon={<X className="size-5" />}
+                    onClick={() => decide('REJECT')}
+                  >
+                    {t('cta.reject')}
+                  </Button>
+                  <Button
+                    size="lg"
+                    loading={busy}
+                    disabled={!verdicts?.approve}
+                    icon={<Check className="size-5" />}
+                    onClick={() => decide('APPROVE')}
+                  >
+                    {approveLabel}
+                  </Button>
+                </div>
+              </>
+            )}
 
             {/* Super admin: delete person */}
             {isSuper && !deleteConfirm && (

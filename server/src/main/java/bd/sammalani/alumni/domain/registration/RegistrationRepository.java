@@ -56,4 +56,16 @@ public interface RegistrationRepository extends JpaRepository<Registration, UUID
                                      @Param("batches") java.util.Collection<Integer> batches);
 
     long countByStatus(RegistrationStatus status);
+
+    /**
+     * Which of these people have a registration in hand at all — the identity
+     * queue shows it so a coordinator knows whether verifying someone also
+     * releases an application waiting behind it. One query for the page.
+     */
+    @Query("""
+            select distinct r.person.id from Registration r
+            where r.person.id in :personIds
+              and r.status <> bd.sammalani.alumni.domain.registration.RegistrationStatus.DRAFT
+            """)
+    java.util.List<UUID> personIdsWithSubmission(@Param("personIds") java.util.Collection<UUID> personIds);
 }

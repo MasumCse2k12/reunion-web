@@ -18,6 +18,7 @@ import bd.sammalani.alumni.admin.AdminDtos.BulkPaymentDecisionRequest;
 import bd.sammalani.alumni.admin.AdminDtos.MemberDecisionRequest;
 import bd.sammalani.alumni.admin.AdminDtos.MemberStatus;
 import bd.sammalani.alumni.admin.AdminDtos.PaymentDecisionRequest;
+import bd.sammalani.alumni.admin.AdminDtos.QueueKind;
 import bd.sammalani.alumni.common.web.CursorPage;
 import bd.sammalani.alumni.domain.payment.PaymentStatus;
 import io.swagger.v3.oas.annotations.Operation;
@@ -42,15 +43,20 @@ public class AdminQueueController {
             description = """
                     Keyset pagination: hand back `nextCursor` unread to get the next page. \
                     The cursor is opaque and a stale one simply starts from the top. \
-                    `total` counts everything matching the filter, not the page.""")
+                    `total` counts everything matching the filter, not the page.
+
+                    `queue=PAYMENTS` reads the money queue, which is approved members only \
+                    — a `memberStatus` sent alongside it is ignored rather than honoured, \
+                    because a payment belongs to a seat somebody granted.""")
     public CursorPage<ApplicationDto> list(
+            @RequestParam(required = false, name = "queue") QueueKind kind,
             @RequestParam(required = false, name = "memberStatus") MemberStatus memberStatus,
             @RequestParam(required = false, name = "paymentStatus") PaymentStatus paymentStatus,
             @RequestParam(required = false, name = "batchYear") Integer batchYear,
             @RequestParam(required = false, name = "q") String search,
             @RequestParam(required = false, name = "cursor") String cursor,
             @RequestParam(required = false, name = "limit") Integer limit) {
-        return queue.page(memberStatus, paymentStatus, batchYear, search, cursor, limit);
+        return queue.page(kind, memberStatus, paymentStatus, batchYear, search, cursor, limit);
     }
 
     @GetMapping("/{id}")

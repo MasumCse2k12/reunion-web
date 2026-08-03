@@ -99,6 +99,7 @@ export function Checkbox({
   onChange,
   label,
   className,
+  disabled,
 }: {
   checked: boolean
   indeterminate?: boolean
@@ -106,6 +107,7 @@ export function Checkbox({
   /** Accessible name. Rendered visibly when given as a string in a label slot. */
   label: string
   className?: string
+  disabled?: boolean
 }) {
   const on = checked || indeterminate
   return (
@@ -114,8 +116,13 @@ export function Checkbox({
       role="checkbox"
       aria-checked={indeterminate ? 'mixed' : checked}
       aria-label={label}
+      disabled={disabled}
       onClick={() => onChange(!checked)}
-      className={cx('grid size-11 shrink-0 place-items-center rounded-xl hover:bg-paper-2', className)}
+      className={cx(
+        'grid size-11 shrink-0 place-items-center rounded-xl',
+        disabled ? 'cursor-not-allowed opacity-40' : 'hover:bg-paper-2',
+        className,
+      )}
     >
       <span
         className={cx(

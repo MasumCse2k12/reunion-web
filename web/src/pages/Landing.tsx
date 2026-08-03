@@ -2,18 +2,19 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ArrowRight, CalendarDays, LayoutDashboard, LogIn, MapPin, Phone, Search, Sparkles, UserPlus } from 'lucide-react'
 import { useApp } from '../lib/store'
-import { api, CONTACT_PHONE, EVENT, type Batch, type Notice } from '../lib/api'
+import { api, CONTACT_PHONE, type Batch, type EventInfo, type Notice } from '../lib/api'
 import { SCHOOL, TEACHERS } from '../mock/data'
 import { Badge, Button, Card, SectionTitle, Stat, cx } from '../components/ui'
 import { LangToggle, SchoolMark } from '../components/Layout'
 
-function useCountdown(target: string) {
+/** Counts down to `target`, or to nothing at all until the date has loaded. */
+function useCountdown(target?: string) {
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000)
     return () => clearInterval(id)
   }, [])
-  const diff = Math.max(0, new Date(target).getTime() - now)
+  const diff = target ? Math.max(0, new Date(target).getTime() - now) : 0
   return {
     days: Math.floor(diff / 86400000),
     hours: Math.floor((diff / 3600000) % 24),
@@ -69,29 +70,34 @@ function AuthActions({ stacked }: { stacked?: boolean }) {
 export default function Landing() {
   const { t, n, yr, lang, user } = useApp()
   const navigate = useNavigate()
-  const cd = useCountdown(EVENT.date)
-
   const [batches, setBatches] = useState<Batch[]>([])
   const [totals, setTotals] = useState({ roster: 0, claimed: 0, batches: 0 })
   const [notices, setNotices] = useState<Notice[]>([])
+  /** Null until the reunion loads. The hero says nothing rather than the wrong thing. */
+  const [event, setEvent] = useState<EventInfo | null>(null)
+
+  const cd = useCountdown(event?.date)
 
   useEffect(() => {
     api.batches().then(setBatches)
     api.totals().then(setTotals)
     api.notices().then(setNotices)
+    api.event().then(setEvent).catch(() => setEvent(null))
   }, [])
 
   const pct = totals.roster > 0 ? Math.round((totals.claimed / totals.roster) * 100) : 0
 
   const eventDate = useMemo(
     () =>
-      new Date(EVENT.date).toLocaleDateString(lang === 'bn' ? 'bn-BD' : 'en-GB', {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-      }),
-    [lang],
+      event?.date
+        ? new Date(event.date).toLocaleDateString(lang === 'bn' ? 'bn-BD' : 'en-GB', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+          })
+        : null,
+    [lang, event?.date],
   )
 
   return (
@@ -135,20 +141,36 @@ export default function Landing() {
             {t('landing.est')}
           </span>
 
+          {/* Title, date and venue come from the database. Until they arrive the
+              hero holds their space rather than showing a guess — the date in
+              particular is one the committee moves, and a stale one sends people
+              to the school on the wrong day. */}
           <h1 className="mx-auto mt-5 max-w-3xl text-4xl font-extrabold leading-tight tracking-tight sm:text-6xl">
-            {lang === 'bn' ? EVENT.titleBn : EVENT.titleEn}
+            {event ? (
+              lang === 'bn' ? event.titleBn : event.titleEn
+            ) : (
+              <span className="mx-auto block h-10 w-80 max-w-full animate-pulse rounded-xl bg-white/15 sm:h-14" />
+            )}
           </h1>
           <p className="mx-auto mt-3 max-w-xl text-lg text-white/75">{t('landing.heroSub')}</p>
 
-          <div className="mt-5 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-white/80">
-            <span className="inline-flex items-center gap-2">
-              <CalendarDays className="size-5 text-gold-300" />
-              {eventDate}
-            </span>
-            <span className="inline-flex items-center gap-2">
-              <MapPin className="size-5 text-gold-300" />
-              {lang === 'bn' ? EVENT.venueBn : EVENT.venueEn}
-            </span>
+          <div className="mt-5 flex min-h-7 flex-wrap items-center justify-center gap-x-6 gap-y-2 text-white/80">
+            {event && (
+              <>
+                {eventDate && (
+                  <span className="inline-flex items-center gap-2">
+                    <CalendarDays className="size-5 text-gold-300" />
+                    {eventDate}
+                  </span>
+                )}
+                {(lang === 'bn' ? event.venueBn : event.venueEn) && (
+                  <span className="inline-flex items-center gap-2">
+                    <MapPin className="size-5 text-gold-300" />
+                    {lang === 'bn' ? event.venueBn : event.venueEn}
+                  </span>
+                )}
+              </>
+            )}
           </div>
 
           {/* Countdown */}

@@ -14,6 +14,7 @@ import bd.sammalani.alumni.common.audit.AuditAction;
 import bd.sammalani.alumni.domain.admin.AdminRole;
 import bd.sammalani.alumni.domain.payment.PaymentStatus;
 import bd.sammalani.alumni.domain.person.Gender;
+import bd.sammalani.alumni.domain.person.PersonStatus;
 import bd.sammalani.alumni.domain.registration.RegistrationDtos.GuestDto;
 import bd.sammalani.alumni.domain.registration.RegistrationDtos.PaymentDto;
 import bd.sammalani.alumni.domain.registration.RegistrationDtos.ReviewDto;
@@ -82,6 +83,20 @@ public final class AdminDtos {
         REJECTED
     }
 
+    /**
+     * Which of the two review queues is being read. They are different questions
+     * asked of the same rows, and the difference is not cosmetic: the payments
+     * queue is about money owed by people who are coming, so it is defined as
+     * approved members only and the server holds it to that whatever the client
+     * asks for. A coordinator confirming a payment for someone whose membership
+     * is still pending — or was refused — is taking money for a seat nobody
+     * granted.
+     */
+    public enum QueueKind {
+        MEMBERS,
+        PAYMENTS
+    }
+
     public enum MemberVerdict {
         APPROVED,
         REJECTED
@@ -125,6 +140,41 @@ public final class AdminDtos {
     }
 
     public record SkippedDto(UUID id, String name, String reason, String reasonBn) {
+    }
+
+    /* ---------------- the identity queue ---------------- */
+
+    /**
+     * Somebody who has proved a mobile number, waiting to be told they are of the
+     * batch they say. Deliberately thinner than {@link ApplicationDto}: there may
+     * be no registration behind this at all, so there is no amount, no guest list
+     * and no payment — only who they claim to be and how to reach them.
+     */
+    public record ClaimDto(
+            UUID personId,
+            String name,
+            String nameBn,
+            Integer batchYear,
+            String phone,
+            String email,
+            Gender gender,
+            String occupation,
+            String city,
+            PersonStatus status,
+            Instant claimedAt,
+            @Schema(description = "Whether they have also sent a registration in for this reunion.")
+            boolean hasRegistration,
+            ReviewDto lastReview) {
+    }
+
+    public enum ClaimVerdict {
+        VERIFIED,
+        REJECTED
+    }
+
+    public record ClaimDecisionRequest(
+            @NotNull ClaimVerdict decision,
+            @Size(max = 500) String note) {
     }
 
     /* ---------------- overview ---------------- */

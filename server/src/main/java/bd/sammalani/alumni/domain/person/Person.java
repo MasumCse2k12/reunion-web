@@ -1,5 +1,6 @@
 package bd.sammalani.alumni.domain.person;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -80,6 +81,14 @@ public class Person extends Auditable implements AuditBatchScoped {
     /** Normalised to 11 digits (01XXXXXXXXX) before it ever reaches here. */
     @Column(unique = true, length = 16)
     private String phone;
+
+    /**
+     * When this person first proved they hold the number on their row. Written
+     * once and never again: it is the keyset sort key of the identity review
+     * queue, and a sort key that moves under a reader loses rows silently.
+     */
+    @Column(name = "claimed_at")
+    private Instant claimedAt;
 
     private String email;
 

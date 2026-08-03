@@ -109,6 +109,11 @@ public class AuthService {
         if (person.getStatus() == PersonStatus.SEEDED) {
             person.setStatus(PersonStatus.CLAIMED);
         }
+        if (person.getClaimedAt() == null) {
+            // Stamped on the first proof and never touched again — a later login
+            // is not a new claim, and the identity queue pages on this.
+            person.setClaimedAt(java.time.Instant.now());
+        }
         people.save(person);
 
         return session(person);
