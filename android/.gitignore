@@ -9,3 +9,8 @@
 .cxx
 local.properties
 app/release/
+
+# Release signing material — must never be committed.
+*.keystore
+*.jks
+keystore.properties

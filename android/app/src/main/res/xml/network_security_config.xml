@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
     RELEASE network security policy.
-    HTTPS only by default; cleartext permitted only for the staging server IP.
+    HTTPS only by default; cleartext permitted only for the production server IP.
     The debug override in src/debug/res/xml/ replaces this file for debug builds.
 -->
 <network-security-config>
@@ -10,7 +10,7 @@
             <certificates src="system" />
         </trust-anchors>
     </base-config>
-    <!-- TODO: remove once the server has HTTPS -->
+    <!-- TODO: remove once the server has a domain + HTTPS. -->
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="false">103.165.162.229</domain>
     </domain-config>

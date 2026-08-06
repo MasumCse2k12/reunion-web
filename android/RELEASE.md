@@ -1,49 +1,55 @@
 # Release & Play Store Publishing Guide
 
-## 1. Generate a Signing Keystore (one-time)
+## 0. Build Prerequisites
 
-```bash
-keytool -genkey -v -keystore reunion-release.keystore \
-  -alias reunion -keyalg RSA -keysize 2048 -validity 10000
-```
-
-Store this keystore securely — never commit it to git.
-
-Add to `.gitignore`:
-```
-*.keystore
-*.jks
-keystore.properties
-```
+- **JDK 17.** AGP 8.1.2 cannot build on JDK 21 — `JdkImageTransform` fails on
+  `core-for-system-modules.jar`. Point `JAVA_HOME` at a 17 install.
+- **Android SDK** with `platforms;android-34` and `build-tools;34.0.0`, and
+  `sdk.dir` set in `local.properties` (gitignored).
 
 ---
 
-## 2. Configure Signing in `app/build.gradle`
+## 1. Signing Keystore (one-time — already done)
 
-```groovy
-android {
-    signingConfigs {
-        release {
-            storeFile file("../reunion-release.keystore")
-            storePassword System.getenv("KEYSTORE_PASSWORD") ?: "your_password"
-            keyAlias "reunion"
-            keyPassword System.getenv("KEY_PASSWORD") ?: "your_password"
-        }
-    }
+`reunion-release.keystore` (RSA 4096, alias `reunion`, valid to 2053) is the
+**upload key**. It and its credentials live outside git:
 
-    buildTypes {
-        release {
-            signingConfig signingConfigs.release
-            minifyEnabled true
-            shrinkResources true
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            buildConfigField "String", "BASE_URL", '"https://alumni.sammalani.edu.bd"'
-        }
-    }
-}
+- `android/reunion-release.keystore`
+- `android/keystore.properties`
+
+Both are gitignored via `*.keystore` / `keystore.properties`. **Back both up**
+— without them you cannot ship an update under the same upload key.
+
+To regenerate from scratch:
+
+```bash
+keytool -genkeypair -v -keystore reunion-release.keystore \
+  -alias reunion -keyalg RSA -keysize 4096 -validity 10000
 ```
 
-Then use `BuildConfig.BASE_URL` in `MainActivity.java` instead of a hardcoded URL.
+Certificate SHA-256 fingerprint:
+`28:4B:25:A5:EE:44:A4:34:DC:2A:C1:80:36:03:50:82:DE:FA:3F:28:80:B3:AD:0B:6C:57:A5:79:ED:8A:8B:AD`
+
+---
+
+## 2. How Signing Is Wired
+
+`app/build.gradle` reads `keystore.properties` from the project root:
+
+```properties
+storeFile=reunion-release.keystore
+storePassword=…
+keyAlias=reunion
+keyPassword=…
+```
+
+Environment variables override the file, so CI can inject secrets without
+writing them to disk: `KEYSTORE_FILE`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`,
+`KEY_PASSWORD`.
+
+If neither the file nor `KEYSTORE_FILE` resolves to an existing keystore, the
+release build still runs but produces an **unsigned** bundle — Play will
+reject it. Check for `Task :app:signReleaseBundle` in the build log.
 
 ---
 
@@ -64,6 +70,8 @@ defaultConfig {
 
 ```bash
 cd /path/to/reunion-web/android
+export JAVA_HOME=/path/to/jdk-17
+export ANDROID_HOME=$HOME/Android/Sdk
 
 # AAB is required for Play Store
 ./gradlew bundleRelease
@@ -98,6 +106,21 @@ jarsigner -verify app/build/outputs/bundle/release/app-release.aab
 - Screenshots: at least 2 phone screenshots
 - Privacy policy URL (mandatory)
 
+### Known risk: the backend is plain HTTP
+
+The app currently points at `http://103.165.162.229:8092`. Two consequences:
+
+1. **Data safety declaration.** Play asks whether user data is encrypted in
+   transit. The honest answer today is *no*. The app handles signup, login,
+   profile photos and payments, which is exactly the data Play's User Data
+   policy expects to be transmitted securely. Declare it accurately — a false
+   "yes" is what gets apps removed.
+2. **The IP is baked into every install.** If that address ever changes, every
+   shipped copy breaks with no way to redirect users.
+
+Both are fixed by putting the server behind a domain with TLS (Caddy gets
+Let's Encrypt certs automatically) and pointing the release build at it.
+
 ### Steps
 
 1. Open Play Console and click **Create app**
@@ -117,7 +140,11 @@ jarsigner -verify app/build/outputs/bundle/release/app-release.aab
 
 - [ ] `versionCode` incremented
 - [ ] `versionName` updated
-- [ ] Release URL set to `https://alumni.sammalani.edu.bd`
-- [ ] Keystore file backed up securely
+- [ ] Release URL in `app/build.gradle` matches the live server
+- [ ] Every host in the release URL has a matching entry in
+      `src/main/res/xml/network_security_config.xml` (cleartext hosts must be
+      listed explicitly, or the WebView loads a blank page)
+- [ ] Keystore file and `keystore.properties` backed up securely
+- [ ] `jarsigner -verify` reports `jar verified.`
 - [ ] Build passes without warnings
 - [ ] Tested on a real device in release mode

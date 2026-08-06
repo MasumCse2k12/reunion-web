@@ -10,6 +10,16 @@ if (localPropsFile.exists()) {
     localPropsFile.withInputStream { stream -> localProps.load(stream) }
 }
 
+// Release signing credentials from keystore.properties (gitignored).
+// Environment variables win over the file so CI can inject secrets instead.
+Properties keystoreProps = new Properties()
+File keystorePropsFile = rootProject.file('keystore.properties')
+if (keystorePropsFile.exists()) {
+    keystorePropsFile.withInputStream { stream -> keystoreProps.load(stream) }
+}
+def keystorePath = System.getenv('KEYSTORE_FILE') ?: keystoreProps.getProperty('storeFile')
+def hasSigningConfig = keystorePath != null && rootProject.file(keystorePath).exists()
+
 android {
     namespace 'bd.sammalani.alumni'
     compileSdk 34
@@ -25,6 +35,17 @@ android {
         buildConfigField "String", "WEB_APP_URL", '"https://alumni.sammalani.edu.bd"'
     }
 
+    signingConfigs {
+        if (hasSigningConfig) {
+            release {
+                storeFile rootProject.file(keystorePath)
+                storePassword System.getenv('KEYSTORE_PASSWORD') ?: keystoreProps.getProperty('storePassword')
+                keyAlias System.getenv('KEY_ALIAS') ?: keystoreProps.getProperty('keyAlias')
+                keyPassword System.getenv('KEY_PASSWORD') ?: keystoreProps.getProperty('keyPassword')
+            }
+        }
+    }
+
     buildTypes {
         debug {
             debuggable true
@@ -35,9 +56,15 @@ android {
             buildConfigField "String", "WEB_APP_URL", "\"${devUrl}\""
         }
         release {
+            if (hasSigningConfig) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            // TODO: switch to https://alumni.sammalani.edu.bd once the server has
+            // a domain + TLS. A bare IP is baked into every install — if this
+            // address ever changes, shipped apps break and cannot be redirected.
             buildConfigField "String", "WEB_APP_URL", '"http://103.165.162.229:8092"'
         }
     }
