@@ -28,7 +28,7 @@ android {
         applicationId "bd.sammalani.alumni"
         minSdk 21          // Android 5.0 — covers 99 %+ of active devices
         targetSdk 35     // Play Console minimum — API 35+ enforces edge-to-edge, see MainActivity#applyEdgeToEdgeInsets
-        versionCode 4    // 1–3 were consumed by rejected uploads; Play never lets a version code be reused
+        versionCode 5    // 1–4 are consumed; Play never lets a version code be reused
         versionName "1.0.0"
 
         // Production URL — override per buildType below.
