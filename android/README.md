@@ -7,8 +7,8 @@ A WebView wrapper that loads the alumni web app. The native shell handles camera
 | Tool | Version |
 |------|---------|
 | Android Studio | Hedgehog (2023.1.1) or newer |
-| JDK | 17 (bundled with Android Studio) |
-| Android SDK | API 34 (installed via SDK Manager) |
+| JDK | 17 or newer (bundled with Android Studio) |
+| Android SDK | API 35 (installed via SDK Manager) |
 | ADB | Comes with Android Studio platform-tools |
 
 ---
@@ -21,7 +21,7 @@ A WebView wrapper that loads the alumni web app. The native shell handles camera
    cd reunion-web/android
    ```
 2. Open **Android Studio** → **Open** → select the `android/` folder.
-3. Let Gradle sync finish. If it asks to upgrade AGP, choose **Don't remind me again** — the project pins AGP 8.1.2.
+3. Let Gradle sync finish. If it asks to upgrade AGP, choose **Don't remind me again** — the project pins AGP 8.6.1.
 
 ---
 
@@ -185,5 +185,5 @@ The release build uses `https://alumni.sammalani.edu.bd` as the web app URL and 
 | Blank page on real device | Check `dev.web_app_url` in `local.properties` — must be your machine's LAN IP |
 | Camera button does nothing | Grant Camera permission in phone Settings → Apps → Alumni |
 | Device not appearing in Android Studio | Enable USB Debugging; try `adb kill-server && adb start-server` |
-| Gradle sync fails on AGP version | Do not upgrade AGP past 8.1.2 — use the version already in the project |
+| Gradle sync fails on AGP version | Use the version already pinned in the project (8.6.1); bumping it also needs a matching Gradle wrapper bump |
 | App crashes on launch | Run `adb logcat -s AndroidRuntime` to see the stack trace |

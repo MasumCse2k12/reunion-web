@@ -1,4 +1,6 @@
 // Top-level build file.
 plugins {
-    id 'com.android.application' version '8.1.2' apply false
+    // 8.6.x is the first AGP line that can compile against SDK 35.
+    // Requires Gradle 8.7+ (see gradle/wrapper/gradle-wrapper.properties).
+    id 'com.android.application' version '8.6.1' apply false
 }

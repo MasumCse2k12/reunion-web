@@ -2,10 +2,11 @@
 
 ## 0. Build Prerequisites
 
-- **JDK 17.** AGP 8.1.2 cannot build on JDK 21 — `JdkImageTransform` fails on
-  `core-for-system-modules.jar`. Point `JAVA_HOME` at a 17 install.
-- **Android SDK** with `platforms;android-34` and `build-tools;34.0.0`, and
-  `sdk.dir` set in `local.properties` (gitignored).
+- **JDK 17 or newer.** AGP 8.6.1 builds fine on JDK 21; the old JDK 17-only
+  restriction applied to AGP 8.1.2 and no longer holds.
+- **Android SDK** with `platforms;android-35` and `build-tools;35.0.0`, and
+  `sdk.dir` set in `local.properties` (gitignored). Play requires
+  `targetSdk 35`, which only AGP 8.6+ can compile against.
 
 ---
 

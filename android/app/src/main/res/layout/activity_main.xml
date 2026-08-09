@@ -4,6 +4,7 @@
     drawn on top of the web content while it loads.
 -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/rootLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/paper">
@@ -42,6 +43,30 @@
         </FrameLayout>
 
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         System-bar scrims
+
+         On API 35+ the window is always edge-to-edge and the theme's
+         statusBarColor / navigationBarColor are ignored, so we paint the
+         bar areas ourselves. Heights are set from the window insets in
+         MainActivity#applyEdgeToEdgeInsets and stay 0 below API 35, where
+         the theme colours still apply.
+         ══════════════════════════════════════════════════════════════════ -->
+
+    <View
+        android:id="@+id/statusBarScrim"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_gravity="top"
+        android:background="@color/brand_600" />
+
+    <View
+        android:id="@+id/navBarScrim"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_gravity="bottom"
+        android:background="@color/brand_900" />
 
     <!-- ══════════════════════════════════════════════════════════════════
          Grand Reunion 2027 — loading overlay

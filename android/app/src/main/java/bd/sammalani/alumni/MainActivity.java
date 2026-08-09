@@ -18,6 +18,7 @@ import android.os.Looper;
 import android.os.SystemClock;
 import android.provider.MediaStore;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.animation.DecelerateInterpolator;
 import android.view.animation.OvershootInterpolator;
 import android.webkit.CookieManager;
@@ -37,7 +38,10 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
+import androidx.core.graphics.Insets;
 import androidx.core.splashscreen.SplashScreen;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import java.io.File;
@@ -156,6 +160,7 @@ public class MainActivity extends AppCompatActivity {
         swipeRefresh = findViewById(R.id.swipeRefresh);
         progressBar  = findViewById(R.id.progressBar);
 
+        applyEdgeToEdgeInsets();
         setupWebView();
         setupSwipeRefresh();
         setupBackHandler();
@@ -198,6 +203,61 @@ public class MainActivity extends AppCompatActivity {
         webView.stopLoading();
         webView.destroy();        // release native resources
         super.onDestroy();
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // Edge-to-edge (API 35+)
+    // ══════════════════════════════════════════════════════════════════════
+
+    /**
+     * From API 35 the platform ignores {@code android:windowOptOutEdgeToEdgeEnforcement}
+     * for apps targeting 35+: the window always spans the full display, and the theme's
+     * {@code statusBarColor} / {@code navigationBarColor} have no effect. Two consequences
+     * have to be handled by hand:
+     *
+     * <ol>
+     *   <li>The WebView would otherwise draw underneath the status and navigation bars,
+     *       so we pad the content container by the bar insets and paint the vacated
+     *       strips with the brand colours the theme used to supply.</li>
+     *   <li>{@code windowSoftInputMode="adjustResize"} no longer resizes the window once
+     *       the decor stops fitting system windows, so the keyboard would cover the
+     *       focused form field. We fold the IME inset into the bottom padding instead.</li>
+     * </ol>
+     *
+     * Below API 35 the window still fits system windows and the theme colours apply, so
+     * this is a no-op — the existing behaviour on those devices is left untouched.
+     *
+     * <p>The splash overlay is deliberately excluded: it is a sibling of the padded
+     * container and stays full-bleed, which is what the brand-green loading screen wants.
+     */
+    private void applyEdgeToEdgeInsets() {
+        if (Build.VERSION.SDK_INT < 35) return;
+
+        View statusBarScrim = findViewById(R.id.statusBarScrim);
+        View navBarScrim    = findViewById(R.id.navBarScrim);
+
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.rootLayout), (v, windowInsets) -> {
+            Insets bars = windowInsets.getInsets(
+                    WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
+            Insets ime  = windowInsets.getInsets(WindowInsetsCompat.Type.ime());
+
+            // When the keyboard is up it already covers the navigation bar, so take
+            // whichever inset reaches further into the content.
+            swipeRefresh.setPadding(bars.left, bars.top, bars.right, Math.max(bars.bottom, ime.bottom));
+
+            setHeight(statusBarScrim, bars.top);
+            setHeight(navBarScrim, bars.bottom);
+
+            // Return the insets unconsumed — the WebView reads them for env(safe-area-*).
+            return windowInsets;
+        });
+    }
+
+    private static void setHeight(View v, int height) {
+        ViewGroup.LayoutParams lp = v.getLayoutParams();
+        if (lp.height == height) return;
+        lp.height = height;
+        v.setLayoutParams(lp);
     }
 
     // ══════════════════════════════════════════════════════════════════════
