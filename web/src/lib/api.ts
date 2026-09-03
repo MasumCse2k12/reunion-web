@@ -3,7 +3,8 @@
  *  HTTP API CLIENT
  * ============================================================================
  *  Every screen in this app talks to the Spring Boot backend through this file.
- *  Set VITE_API_BASE_URL in .env.local; defaults to the local dev server.
+ *  Set VITE_API_BASE_URL at BUILD time (Vite inlines it). Without it this
+ *  falls back to the production server, so a misconfigured build still works.
  * ============================================================================
  */
 

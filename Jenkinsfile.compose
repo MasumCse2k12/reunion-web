@@ -79,7 +79,7 @@ pipeline {
                 sh '''
                     set -e
                     for var in JWT_SECRET DB_PASSWORD MINIO_SECRET_KEY BOOTSTRAP_ADMIN_PASSWORD \
-                               VITE_API_BASE_URL MINIO_PUBLIC_BASE_URL CORS_ORIGINS; do
+                               MINIO_PUBLIC_BASE_URL CORS_ORIGINS; do
                         grep -q "^${var}=" .env \
                             || { echo "ERROR: ${var} missing from .env"; exit 1; }
                         val=$(grep "^${var}=" .env | cut -d= -f2-)
@@ -93,10 +93,14 @@ pipeline {
                     [ -z "$dupes" ] \
                         || { echo "ERROR: duplicate keys in .env: $dupes"; exit 1; }
 
-                    # These are compiled into the JS bundle and must be reachable from a
-                    # browser. localhost here builds an app that only works on the server.
+                    # VITE_API_BASE_URL is optional: docker-compose.yml carries a
+                    # production default, so an absent value still builds a working app.
+                    # A localhost value does not — it builds an app that only works on
+                    # the server itself, which is the failure this guard exists to stop.
                     for var in VITE_API_BASE_URL MINIO_PUBLIC_BASE_URL; do
+                        grep -q "^${var}=" .env || continue
                         val=$(grep "^${var}=" .env | cut -d= -f2-)
+                        [ -n "$val" ] || continue
                         case "$val" in
                             *localhost*|*127.0.0.1*)
                                 echo "ERROR: ${var} is ${val} — must be browser-reachable"; exit 1 ;;

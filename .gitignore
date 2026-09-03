@@ -8,6 +8,8 @@ build/
 .netlify/
 
 # secrets — this repository is public, keep it that way
+.env
+.env.*
 !.env.example
 
 # local tooling / editor
