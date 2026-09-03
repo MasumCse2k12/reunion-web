@@ -8,8 +8,6 @@ build/
 .netlify/
 
 # secrets — this repository is public, keep it that way
-.env
-.env.*
 !.env.example
 
 # local tooling / editor
@@ -21,4 +19,4 @@ build/
 # OS
 .DS_Store
 Thumbs.db
-alumni.env
+alumni.env*

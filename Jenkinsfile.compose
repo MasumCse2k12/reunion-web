@@ -78,13 +78,31 @@ pipeline {
                 }
                 sh '''
                     set -e
-                    for var in JWT_SECRET DB_PASSWORD MINIO_SECRET_KEY BOOTSTRAP_ADMIN_PASSWORD; do
+                    for var in JWT_SECRET DB_PASSWORD MINIO_SECRET_KEY BOOTSTRAP_ADMIN_PASSWORD \
+                               VITE_API_BASE_URL MINIO_PUBLIC_BASE_URL CORS_ORIGINS; do
                         grep -q "^${var}=" .env \
                             || { echo "ERROR: ${var} missing from .env"; exit 1; }
                         val=$(grep "^${var}=" .env | cut -d= -f2-)
                         [ -n "$val" ] \
                             || { echo "ERROR: ${var} is empty in .env"; exit 1; }
                     done
+
+                    # A duplicated key is silently won by the last occurrence — which is
+                    # how a stale DB_URL points a "successful" deploy at the wrong server.
+                    dupes=$(grep -oE "^[A-Za-z_][A-Za-z0-9_]*=" .env | sort | uniq -d || true)
+                    [ -z "$dupes" ] \
+                        || { echo "ERROR: duplicate keys in .env: $dupes"; exit 1; }
+
+                    # These are compiled into the JS bundle and must be reachable from a
+                    # browser. localhost here builds an app that only works on the server.
+                    for var in VITE_API_BASE_URL MINIO_PUBLIC_BASE_URL; do
+                        val=$(grep "^${var}=" .env | cut -d= -f2-)
+                        case "$val" in
+                            *localhost*|*127.0.0.1*)
+                                echo "ERROR: ${var} is ${val} — must be browser-reachable"; exit 1 ;;
+                        esac
+                    done
+
                     echo ".env validated."
                 '''
             }
