@@ -24,7 +24,7 @@ import {
   type TicketType,
 } from '../mock/data'
 
-const BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:8090/smbc'
+const BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://107.167.94.230:8090/smbc'
 
 export const CONTACT_PHONE = (import.meta.env.VITE_CONTACT_PHONE as string | undefined) ?? '01943177909'
 
