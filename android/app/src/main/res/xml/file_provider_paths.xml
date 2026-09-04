@@ -11,4 +11,7 @@
     <cache-path
         name="camera_captures"
         path="." />
+    <external-files-path
+        name="camera_photos"
+        path="Pictures/" />
 </paths>

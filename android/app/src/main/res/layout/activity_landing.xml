@@ -1,0 +1,328 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/paper"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- ─── Hero (brand_800) ─────────────────────────────────────────── -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@color/brand_800"
+            android:paddingBottom="28dp">
+
+            <!-- Top bar: logo + school name + lang toggle -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingLeft="16dp" android:paddingRight="16dp">
+
+                <ImageView
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:src="@drawable/ic_reunion_emblem"
+                    android:contentDescription="@null" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="10dp"
+                    android:text="@string/school_name"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/white" />
+
+                <TextView
+                    android:id="@+id/tvLang"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="13sp"
+                    android:textColor="@color/brand_200"
+                    android:textStyle="bold"
+                    android:background="@drawable/bg_countdown_tile"
+                    android:paddingLeft="12dp" android:paddingRight="12dp"
+                    android:paddingTop="5dp" android:paddingBottom="5dp" />
+
+            </LinearLayout>
+
+            <!-- Center content: emblem + event name + countdown -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:paddingLeft="24dp" android:paddingRight="24dp"
+                android:paddingTop="8dp">
+
+                <ImageView
+                    android:layout_width="80dp"
+                    android:layout_height="80dp"
+                    android:src="@drawable/ic_reunion_emblem"
+                    android:contentDescription="@null" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:text="@string/splash_event"
+                    android:textSize="26sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/gold_light"
+                    android:letterSpacing="0.04" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/splash_year"
+                    android:textSize="48sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/white"
+                    android:lineSpacingMultiplier="0.9" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/landing_hero_sub"
+                    android:textSize="13sp"
+                    android:textColor="@color/brand_300"
+                    android:gravity="center" />
+
+                <!-- Countdown tiles -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="20dp"
+                    android:gravity="center">
+
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                        android:layout_weight="1" android:orientation="vertical" android:gravity="center"
+                        android:background="@drawable/bg_countdown_tile"
+                        android:paddingTop="10dp" android:paddingBottom="10dp"
+                        android:layout_marginLeft="4dp" android:layout_marginRight="4dp">
+                        <TextView android:id="@+id/tvDays" android:layout_width="wrap_content"
+                            android:layout_height="wrap_content" android:text="--"
+                            android:textSize="26sp" android:textStyle="bold" android:textColor="@color/gold_light" />
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="@string/landing_days" android:textSize="10sp" android:textColor="@color/brand_300" />
+                    </LinearLayout>
+
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                        android:layout_weight="1" android:orientation="vertical" android:gravity="center"
+                        android:background="@drawable/bg_countdown_tile"
+                        android:paddingTop="10dp" android:paddingBottom="10dp"
+                        android:layout_marginLeft="4dp" android:layout_marginRight="4dp">
+                        <TextView android:id="@+id/tvHours" android:layout_width="wrap_content"
+                            android:layout_height="wrap_content" android:text="--"
+                            android:textSize="26sp" android:textStyle="bold" android:textColor="@color/gold_light" />
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="@string/landing_hours" android:textSize="10sp" android:textColor="@color/brand_300" />
+                    </LinearLayout>
+
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                        android:layout_weight="1" android:orientation="vertical" android:gravity="center"
+                        android:background="@drawable/bg_countdown_tile"
+                        android:paddingTop="10dp" android:paddingBottom="10dp"
+                        android:layout_marginLeft="4dp" android:layout_marginRight="4dp">
+                        <TextView android:id="@+id/tvMins" android:layout_width="wrap_content"
+                            android:layout_height="wrap_content" android:text="--"
+                            android:textSize="26sp" android:textStyle="bold" android:textColor="@color/gold_light" />
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="@string/landing_mins" android:textSize="10sp" android:textColor="@color/brand_300" />
+                    </LinearLayout>
+
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                        android:layout_weight="1" android:orientation="vertical" android:gravity="center"
+                        android:background="@drawable/bg_countdown_tile"
+                        android:paddingTop="10dp" android:paddingBottom="10dp"
+                        android:layout_marginLeft="4dp" android:layout_marginRight="4dp">
+                        <TextView android:id="@+id/tvSecs" android:layout_width="wrap_content"
+                            android:layout_height="wrap_content" android:text="--"
+                            android:textSize="26sp" android:textStyle="bold" android:textColor="@color/gold_light" />
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="@string/landing_secs" android:textSize="10sp" android:textColor="@color/brand_300" />
+                    </LinearLayout>
+
+                </LinearLayout>
+
+                <!-- Stats row -->
+                <View android:layout_width="match_parent" android:layout_height="1dp"
+                    android:layout_marginTop="24dp" android:background="#26FFFFFF" />
+
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="horizontal" android:paddingTop="16dp" android:paddingBottom="4dp">
+
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                        android:layout_weight="1" android:orientation="vertical" android:gravity="center">
+                        <TextView android:id="@+id/tvStatAlumni" android:layout_width="wrap_content"
+                            android:layout_height="wrap_content" android:text="…"
+                            android:textSize="22sp" android:textStyle="bold" android:textColor="@color/gold_light" />
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="@string/landing_found_so_far" android:textSize="10sp"
+                            android:textColor="@color/brand_300" android:gravity="center" />
+                    </LinearLayout>
+
+                    <View android:layout_width="1dp" android:layout_height="match_parent" android:background="#26FFFFFF" />
+
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                        android:layout_weight="1" android:orientation="vertical" android:gravity="center">
+                        <TextView android:id="@+id/tvStatRegistered" android:layout_width="wrap_content"
+                            android:layout_height="wrap_content" android:text="…"
+                            android:textSize="22sp" android:textStyle="bold" android:textColor="@color/gold_light" />
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="@string/landing_roster" android:textSize="10sp"
+                            android:textColor="@color/brand_300" android:gravity="center" />
+                    </LinearLayout>
+
+                    <View android:layout_width="1dp" android:layout_height="match_parent" android:background="#26FFFFFF" />
+
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                        android:layout_weight="1" android:orientation="vertical" android:gravity="center">
+                        <TextView android:id="@+id/tvStatBatches" android:layout_width="wrap_content"
+                            android:layout_height="wrap_content" android:text="…"
+                            android:textSize="22sp" android:textStyle="bold" android:textColor="@color/gold_light" />
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="@string/landing_batches" android:textSize="10sp"
+                            android:textColor="@color/brand_300" android:gravity="center" />
+                    </LinearLayout>
+
+                </LinearLayout>
+
+                <!-- CTA buttons -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnFindMe"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="20dp"
+                    android:text="@string/landing_find_me"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    app:cornerRadius="12dp"
+                    app:backgroundTint="@color/gold_light"
+                    android:textColor="@color/brand_900" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/landing_find_me_sub"
+                    android:textSize="12sp"
+                    android:textColor="@color/brand_300"
+                    android:gravity="center" />
+
+                <com.google.android.material.button.MaterialButton
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:id="@+id/btnLogin"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="12dp"
+                    android:text="@string/landing_login"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    app:cornerRadius="12dp"
+                    app:strokeColor="@color/brand_300"
+                    app:strokeWidth="2dp"
+                    android:textColor="@color/white" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- ─── Batch search section ─────────────────────────────────────── -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="20dp"
+            android:background="@color/paper">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/landing_search_title"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/ink_900"
+                android:layout_marginBottom="12dp" />
+
+            <!-- Year input + Search button row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="8dp"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    app:boxCornerRadiusBottomEnd="12dp"
+                    app:boxCornerRadiusBottomStart="12dp"
+                    app:boxCornerRadiusTopEnd="12dp"
+                    app:boxCornerRadiusTopStart="12dp"
+                    app:boxStrokeColor="@color/brand_300">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etSearchYear"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="number"
+                        android:hint="@string/landing_search_hint"
+                        android:gravity="center"
+                        android:textSize="18sp"
+                        android:maxLength="4" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSearchBatch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="56dp"
+                    android:text="@string/landing_search_btn"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    android:minWidth="0dp"
+                    app:cornerRadius="12dp"
+                    app:backgroundTint="@color/brand_600" />
+
+            </LinearLayout>
+
+            <!-- Search results container -->
+            <LinearLayout
+                android:id="@+id/searchResultsContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="12dp"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/tvSearchEmpty"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/landing_search_empty"
+                android:textSize="14sp"
+                android:textColor="@color/ink_500"
+                android:gravity="center"
+                android:padding="16dp"
+                android:visibility="gone" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</ScrollView>

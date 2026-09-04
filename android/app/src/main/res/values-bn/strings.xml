@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">সম্মিলনী অ্যালামনাই</string>
+    <string name="choose_photo">ছবি বেছে নিন</string>
+
+    <string name="school_name">সম্মিলনী মাধ্যমিক বিদ্যালয়</string>
+    <string name="school_location">চলিতাতলা, নড়াইল</string>
+    <string name="school_est">প্রতিষ্ঠা ১৯৬৮</string>
+
+    <string name="nav_dashboard">হোম</string>
+    <string name="nav_batches">ব্যাচ</string>
+    <string name="nav_guests">নিবন্ধন</string>
+    <string name="nav_profile">প্রোফাইল</string>
+
+    <string name="auth_login_title">স্বাগতম</string>
+    <string name="auth_login_sub">সাইন ইন করতে মোবাইল নম্বর দিন</string>
+    <string name="auth_phone_label">মোবাইল নম্বর</string>
+    <string name="auth_phone_hint">এই নম্বরে নিবন্ধিত</string>
+    <string name="auth_send_code">OTP পাঠান</string>
+    <string name="auth_otp_title">কোড লিখুন</string>
+    <string name="auth_otp_sub">৬ সংখ্যার কোড পাঠানো হয়েছে</string>
+    <string name="auth_verify">যাচাই করুন</string>
+    <string name="auth_resend">পুনরায় পাঠান</string>
+    <string name="auth_no_account">নতুন?</string>
+    <string name="auth_need_help">সাহায্য</string>
+    <string name="auth_logout">লগ আউট</string>
+
+    <string name="signup_title">আপনার নাম খুঁজুন</string>
+    <string name="signup_sub">শুরু করতে এসএসসি ব্যাচের বছর দিন</string>
+    <string name="signup_step1">এসএসসি ব্যাচের বছর</string>
+    <string name="signup_year_placeholder">যেমন: ১৯৯৮</string>
+    <string name="signup_step2">আপনার নাম বেছে নিন</string>
+    <string name="signup_step3">পরিচয় নিশ্চিত করুন</string>
+    <string name="signup_new_name">আপনার পুরো নাম</string>
+    <string name="signup_this_is_me">এটি আমি</string>
+    <string name="signup_search_name">নাম দিয়ে খুঁজুন…</string>
+    <string name="signup_not_found">তালিকায় নেই?</string>
+    <string name="signup_welcome">স্বাগতম!</string>
+    <string name="signup_welcome_sub">আপনি নিবন্ধিত হয়েছেন। সহপাঠীরা যেন আপনাকে খুঁজে পান, তাই প্রোফাইল সম্পূর্ণ করুন।</string>
+    <string name="signup_already_joined">ইতিমধ্যে যুক্ত</string>
+    <string name="signup_not_joined">এখনো যুক্ত হননি</string>
+    <string name="signup_pick_decade">অথবা দশক বেছে নিন</string>
+
+    <string name="dash_greeting">স্বাগতম</string>
+    <string name="dash_event_card">আসন্ন অনুষ্ঠান</string>
+    <string name="dash_registered">নিবন্ধিত</string>
+    <string name="dash_rejected">বাতিল</string>
+    <string name="dash_awaiting_review">পর্যালোচনার অপেক্ষায়</string>
+    <string name="dash_draft">খসড়া</string>
+    <string name="dash_attending">অংশগ্রহণকারী</string>
+    <string name="dash_people">জন</string>
+    <string name="dash_total_due">মোট পরিমাণ</string>
+    <string name="dash_register_now">এখনই নিবন্ধন করুন</string>
+    <string name="dash_not_registered">আপনি এখনো নিবন্ধন করেননি।</string>
+    <string name="dash_your_batch">আপনার ব্যাচ</string>
+    <string name="dash_profile_complete">প্রোফাইল সম্পূর্ণতা</string>
+    <string name="dash_notices">নোটিশ</string>
+    <string name="dash_missing_title">নিখোঁজ সহপাঠী</string>
+    <string name="dash_missing_sub">আপনার ব্যাচের কাউকে চেনেন যে এখনো যোগ দেয়নি? তাদের খুঁজতে সাহায্য করুন।</string>
+    <string name="dash_i_know_them">আমি তাকে চিনি</string>
+    <string name="dash_quick_add">একটি যোগাযোগ শেয়ার করুন</string>
+    <string name="dash_batch_found">ব্যাচমেট খুঁজে পাওয়া গেছে</string>
+    <string name="dash_few_more">আর কয়েকটি তথ্য দিলেই সম্পূর্ণ হবে।</string>
+    <string name="dash_complete">সম্পূর্ণ! ধন্যবাদ।</string>
+    <string name="dash_view_profile">প্রোফাইল দেখুন</string>
+    <string name="dash_ssc">এসএসসি</string>
+    <string name="dash_their_number">তার মোবাইল নম্বর</string>
+    <string name="dash_sms_note">আমরা তাকে একটি এসএমএস পাঠাব — আপনার নাম উল্লেখ করে।</string>
+
+    <string name="landing_hero_sub">ব্যাচ ১৯৬৮–২০২৬ · সকল প্রাক্তন, একটি প্ল্যাটফর্মে</string>
+    <string name="landing_find_me">সাইন আপ / নিবন্ধন করুন</string>
+    <string name="landing_find_me_sub">আমাদের প্রাক্তন তালিকায় আপনার নাম খুঁজুন</string>
+    <string name="landing_login">লগইন করুন</string>
+    <string name="landing_days">দিন</string>
+    <string name="landing_hours">ঘণ্টা</string>
+    <string name="landing_mins">মিনিট</string>
+    <string name="landing_secs">সেকেন্ড</string>
+    <string name="landing_found_so_far">প্রাক্তন খুঁজে পাওয়া গেছে</string>
+    <string name="landing_registered">নিবন্ধিত</string>
+    <string name="landing_batches">ব্যাচ</string>
+    <string name="landing_teachers">শিক্ষক</string>
+    <string name="landing_batch_coverage">ব্যাচ কভারেজ</string>
+    <string name="landing_coverage_note">সোনালি ঘরগুলো — এই ব্যাচগুলোর বেশিরভাগকে এখনো খুঁজে পাওয়া যায়নি।</string>
+    <string name="landing_of_total">মোটের মধ্যে</string>
+    <string name="landing_cta_title">আপনার নাম কি তালিকায় আছে?</string>
+    <string name="landing_cta_sub">এক মিনিটেরও কম সময় লাগবে। পাসওয়ার্ড লাগবে না — শুধু মোবাইল নম্বর।</string>
+    <string name="landing_go_to_dashboard">ড্যাশবোর্ডে যান</string>
+    <string name="landing_teachers_title">বর্তমান শিক্ষকবৃন্দ</string>
+    <string name="landing_in_memoriam">স্মরণে</string>
+    <string name="landing_admin_portal">অ্যাডমিন পোর্টাল</string>
+
+    <string name="batches_title">ব্যাচ</string>
+    <string name="batches_sub">১৯৬৮ থেকে ২০২৬ পর্যন্ত সব এসএসসি ব্যাচ</string>
+    <string name="batches_members">জন</string>
+    <string name="batches_found">খুঁজে পাওয়া</string>
+    <string name="batches_missing">নিখোঁজ</string>
+    <string name="batches_memorial">স্মরণে</string>
+    <string name="batches_search">সাল দিয়ে খুঁজুন…</string>
+    <string name="batches_your_batch">আপনার ব্যাচ</string>
+    <string name="batches_ssc_batch">এসএসসি ব্যাচ</string>
+    <string name="batches_no_results">কেউ নেই</string>
+
+    <string name="batch_not_reached">যোগাযোগ করা যায়নি</string>
+    <string name="batch_remembered">আল্লাহ তাঁকে জান্নাতবাসী করুন</string>
+
+    <string name="profile_title">আমার প্রোফাইল</string>
+    <string name="profile_name">পুরো নাম</string>
+    <string name="profile_batch">ব্যাচের বছর</string>
+    <string name="profile_phone">মোবাইল নম্বর</string>
+    <string name="profile_occupation">পেশা</string>
+    <string name="profile_city">শহর / অবস্থান</string>
+    <string name="profile_optional">ঐচ্ছিক</string>
+    <string name="profile_optional_hint">ঐচ্ছিক — পরে দিলেও চলবে</string>
+    <string name="profile_more_details">আরও তথ্য</string>
+    <string name="profile_more_details_sub">এই তথ্যগুলো ঐচ্ছিক এবং যেকোনো সময় যোগ করা যাবে।</string>
+    <string name="profile_email">ইমেইল ঠিকানা</string>
+    <string name="profile_gender">লিঙ্গ</string>
+    <string name="profile_blood">রক্তের গ্রুপ</string>
+    <string name="profile_dob">জন্ম তারিখ</string>
+    <string name="profile_saved">সংরক্ষিত হয়েছে!</string>
+    <string name="profile_save">সংরক্ষণ করুন</string>
+    <string name="profile_update_details">তথ্য হালনাগাদ করুন</string>
+    <string name="profile_privacy_title">গোপনীয়তা</string>
+    <string name="profile_privacy_body">আপনার মোবাইল নম্বর, ইমেইল ও জন্ম তারিখ শুধু আপনার ব্যাচের সদস্য এবং কমিটির অ্যাডমিনরা দেখতে পাবেন।</string>
+    <string name="profile_change_photo">ছবি পরিবর্তন করুন</string>
+    <string name="profile_remove_photo">ছবি মুছুন</string>
+    <string name="profile_uploading">আপলোড হচ্ছে…</string>
+    <string name="profile_photo_hint">JPG, PNG বা WebP · সর্বোচ্চ ৫ MB</string>
+    <string name="profile_jpg_png">JPG, PNG বা WebP</string>
+    <string name="profile_not_set">সেট করা হয়নি</string>
+
+    <string name="gender_male">পুরুষ</string>
+    <string name="gender_female">মহিলা</string>
+    <string name="gender_other">অন্যান্য</string>
+
+    <string name="guests_title">নিবন্ধন</string>
+    <string name="guests_sub">গ্র্যান্ড রিইউনিয়ন ২০২৭-এ নিবন্ধন করুন</string>
+    <string name="guests_your_ticket">আপনার টিকেট</string>
+    <string name="guests_add_member">পরিবারের সদস্য যোগ করুন</string>
+    <string name="guests_none">কোনো পরিবারের সদস্য যোগ করা হয়নি।</string>
+    <string name="guests_submitted">নিবন্ধন জমা দেওয়া হয়েছে</string>
+    <string name="guests_submitted_sub">আপনার নিবন্ধন কমিটির পর্যালোচনাধীন।</string>
+    <string name="guests_approved">নিবন্ধন অনুমোদিত</string>
+    <string name="guests_approved_sub">আপনার নিবন্ধন অনুমোদিত হয়েছে। অনুগ্রহ করে আপনার সমন্বয়কারীকে পেমেন্ট করুন।</string>
+    <string name="guests_rejected">নিবন্ধন বাতিল</string>
+    <string name="guests_summary">খরচের সারসংক্ষেপ</string>
+    <string name="guests_total">মোট</string>
+    <string name="guests_note">কমিটির কাছে নোট (ঐচ্ছিক)</string>
+    <string name="guests_how_to_pay">কীভাবে পেমেন্ট করবেন</string>
+    <string name="guests_how_to_pay_sub">অনলাইনে কোনো পেমেন্ট নেই। আপনার ব্যাচ সমন্বয়কারীকে সরাসরি পেমেন্ট করুন — বিকাশ, নগদ বা নগদে — তারপর এখানে রিপোর্ট করুন।</string>
+    <string name="guests_coordinator">আপনার ব্যাচ সমন্বয়কারী</string>
+    <string name="guests_report_payment">পেমেন্ট রিপোর্ট করুন</string>
+    <string name="guests_pay_confirmed">পেমেন্ট নিশ্চিত হয়েছে</string>
+    <string name="guests_pay_reported">পেমেন্ট রিপোর্ট করা হয়েছে — নিশ্চিতকরণের অপেক্ষায়</string>
+    <string name="guests_pay_rejected">পেমেন্ট বাতিল</string>
+    <string name="guests_pay_method">পেমেন্ট পদ্ধতি</string>
+    <string name="guests_pay_ref">লেনদেন রেফারেন্স</string>
+    <string name="guests_pay_ref_hint">বিকাশ/নগদ TrxID অথবা ব্যাংক স্লিপ নম্বর</string>
+    <string name="guests_pay_amount">পরিমাণ</string>
+    <string name="guests_free">বিনামূল্যে</string>
+    <string name="guests_tshirt">টি-শার্টের সাইজ</string>
+    <string name="guests_food">খাদ্যাভ্যাস</string>
+    <string name="guests_name">পুরো নাম</string>
+    <string name="guests_relation">সম্পর্ক</string>
+    <string name="guests_age">বয়স</string>
+    <string name="guests_age_hint">৫ বছরের নিচে হলে বিনামূল্যে</string>
+    <string name="guests_full_name">পুরো নাম</string>
+    <string name="guests_family_members">পরিবারের সদস্য</string>
+    <string name="guests_remove">মুছুন</string>
+
+    <string name="rel_spouse">স্বামী / স্ত্রী</string>
+    <string name="rel_child">সন্তান</string>
+    <string name="rel_parent">পিতা-মাতা</string>
+    <string name="rel_sibling">ভাই-বোন</string>
+    <string name="rel_other">অন্যান্য</string>
+
+    <string name="food_regular">সাধারণ</string>
+    <string name="food_no_beef">গরু ছাড়া</string>
+    <string name="food_veg">নিরামিষ</string>
+
+    <string name="pay_bkash">বিকাশ</string>
+    <string name="pay_nagad">নগদ</string>
+    <string name="pay_rocket">রকেট</string>
+    <string name="pay_bank">ব্যাংক ট্রান্সফার</string>
+    <string name="pay_cash">নগদ</string>
+    <string name="pay_other">অন্যান্য</string>
+
+    <string name="cta_continue">এগিয়ে যান</string>
+    <string name="cta_add">যোগ করুন</string>
+    <string name="cta_save">সংরক্ষণ করুন</string>
+    <string name="cta_submit">জমা দিন</string>
+    <string name="cta_remove">মুছুন</string>
+    <string name="cta_view_all">সব দেখুন</string>
+    <string name="cta_try_again">আবার চেষ্টা করুন</string>
+
+    <string name="common_loading">লোড হচ্ছে…</string>
+    <string name="common_error">কিছু একটা সমস্যা হয়েছে। আবার চেষ্টা করুন।</string>
+    <string name="common_no_internet">ইন্টারনেট সংযোগ নেই</string>
+    <string name="common_taka_symbol">৳</string>
+    <string name="common_or">অথবা</string>
+    <string name="common_yrs">বছর</string>
+    <string name="common_cancel">বাতিল</string>
+
+    <string name="lang_toggle">English</string>
+
+    <!-- Landing search -->
+    <string name="landing_roster">মোট তালিকা</string>
+    <string name="landing_search_title">ব্যাচের বছর দিয়ে প্রাক্তন খুঁজুন</string>
+    <string name="landing_search_hint">যেমন: ১৯৯৮</string>
+    <string name="landing_search_btn">খুঁজুন</string>
+    <string name="landing_search_empty">এই ব্যাচের বছরে কোনো ফলাফল পাওয়া যায়নি।</string>
+</resources>

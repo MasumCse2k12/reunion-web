@@ -1,24 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-    Mirrors the web app's Tailwind CSS theme (src/index.css).
-    Brand = deep school green; Gold = heritage accent.
--->
 <resources>
-    <!-- Brand (green) -->
+    <!-- Brand (deep school green) -->
     <color name="brand_50">#f0f7f3</color>
     <color name="brand_100">#dbeee3</color>
+    <color name="brand_200">#b7ddc7</color>
+    <color name="brand_300">#7fbfa0</color>
+    <color name="brand_500">#2d8a5f</color>
     <color name="brand_600">#1f6b4a</color>
     <color name="brand_700">#19553c</color>
-    <color name="brand_900">#123829</color>
+    <color name="brand_800">#133f2d</color>
+    <color name="brand_900">#0e2a1e</color>
 
     <!-- Paper / background -->
     <color name="paper">#faf8f4</color>
+    <color name="paper_2">#f0ede7</color>
 
     <!-- Gold — reunion accent -->
     <color name="gold">#d4a040</color>
+    <color name="gold_50">#fdf8ee</color>
+    <color name="gold_100">#f9edcc</color>
+    <color name="gold_300">#e8c070</color>
     <color name="gold_light">#f5c842</color>
+
+    <!-- Ink / text -->
+    <color name="ink_900">#0f172a</color>
+    <color name="ink_700">#334155</color>
+    <color name="ink_500">#64748b</color>
+    <color name="ink_400">#94a3b8</color>
+
+    <!-- Status -->
+    <color name="red_500">#ef4444</color>
+    <color name="red_50">#fef2f2</color>
+    <color name="red_200">#fecaca</color>
 
     <!-- Utility -->
     <color name="white">#FFFFFF</color>
     <color name="black">#000000</color>
+    <color name="transparent">#00000000</color>
+
+    <!-- Bottom nav -->
+    <color name="nav_bg">#FFFFFF</color>
 </resources>

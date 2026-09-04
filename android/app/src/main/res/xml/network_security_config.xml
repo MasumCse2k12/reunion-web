@@ -1,17 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-    RELEASE network security policy.
-    HTTPS only by default; cleartext permitted only for the production server IP.
-    The debug override in src/debug/res/xml/ replaces this file for debug builds.
--->
 <network-security-config>
     <base-config cleartextTrafficPermitted="false">
         <trust-anchors>
             <certificates src="system" />
         </trust-anchors>
     </base-config>
-    <!-- TODO: remove once the server has a domain + HTTPS. -->
+    <!-- API server — cleartext until a domain + TLS is set up -->
     <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">107.167.94.230</domain>
         <domain includeSubdomains="false">103.165.162.229</domain>
+        <!-- Android emulator localhost alias -->
+        <domain includeSubdomains="false">10.0.2.2</domain>
     </domain-config>
 </network-security-config>

@@ -176,7 +176,7 @@
             android:layout_gravity="center"
             android:gravity="center"
             android:orientation="vertical"
-            android:paddingHorizontal="40dp">
+            android:paddingLeft="40dp" android:paddingRight="40dp">
 
             <!-- Crest emblem -->
             <ImageView

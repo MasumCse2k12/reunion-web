@@ -1,13 +1,237 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Sammilani Alumni</string>
-    <!-- Shown in the system file/photo chooser dialog title -->
-    <string name="choose_photo">Choose Photo · ছবি বেছে নিন</string>
+    <string name="choose_photo">Choose Photo</string>
 
-    <!-- Grand Reunion 2027 loading splash -->
+    <!-- Splash -->
     <string name="splash_school_en">SAMMILANI ALUMNI ASSOCIATION</string>
     <string name="splash_school_bn">সম্মিলনী প্রাক্তন ছাত্র সংসদ</string>
     <string name="splash_event">GRAND REUNION</string>
     <string name="splash_year">2027</string>
-    <string name="splash_tagline">একসাথে আবার  ·  Together Again</string>
+    <string name="splash_tagline">স্মৃতির টানে প্রিয় প্রাঙ্গণে, এসো মিলি প্রাণের বন্ধনে।</string>
+
+    <!-- School info -->
+    <string name="school_name">Sammalani Secondary School</string>
+    <string name="school_location">Chalitatala, Narail</string>
+    <string name="school_est">Est. 1968</string>
+
+    <!-- Navigation -->
+    <string name="nav_dashboard">Home</string>
+    <string name="nav_batches">Batches</string>
+    <string name="nav_guests">Registration</string>
+    <string name="nav_profile">Profile</string>
+
+    <!-- Auth -->
+    <string name="auth_login_title">Welcome back</string>
+    <string name="auth_login_sub">Enter your mobile number to sign in</string>
+    <string name="auth_phone_label">Mobile number</string>
+    <string name="auth_phone_hint">Registered with this number</string>
+    <string name="auth_send_code">Send OTP</string>
+    <string name="auth_otp_title">Enter the code</string>
+    <string name="auth_otp_sub">We sent a 6-digit code to</string>
+    <string name="auth_verify">Verify</string>
+    <string name="auth_resend">Resend code</string>
+    <string name="auth_no_account">New here?</string>
+    <string name="auth_need_help">Help</string>
+    <string name="auth_logout">Log out</string>
+
+    <!-- Signup -->
+    <string name="signup_title">Find your name</string>
+    <string name="signup_sub">Enter your SSC batch year to get started</string>
+    <string name="signup_step1">Your SSC batch year</string>
+    <string name="signup_year_placeholder">e.g. 1998</string>
+    <string name="signup_step2">Select your name</string>
+    <string name="signup_step3">Confirm your identity</string>
+    <string name="signup_new_name">Your full name</string>
+    <string name="signup_this_is_me">This is me</string>
+    <string name="signup_search_name">Search by name…</string>
+    <string name="signup_not_found">Not in the list?</string>
+    <string name="signup_welcome">Welcome!</string>
+    <string name="signup_welcome_sub">You are now registered. Complete your profile to help classmates find you.</string>
+    <string name="signup_already_joined">Already joined</string>
+    <string name="signup_not_joined">Not yet joined</string>
+    <string name="signup_pick_decade">Or pick a decade</string>
+
+    <!-- Dashboard -->
+    <string name="dash_greeting">Welcome</string>
+    <string name="dash_event_card">Upcoming Event</string>
+    <string name="dash_registered">Registered</string>
+    <string name="dash_rejected">Rejected</string>
+    <string name="dash_awaiting_review">Awaiting review</string>
+    <string name="dash_draft">Draft</string>
+    <string name="dash_attending">Attending</string>
+    <string name="dash_people">people</string>
+    <string name="dash_total_due">Total due</string>
+    <string name="dash_register_now">Register Now</string>
+    <string name="dash_not_registered">You have not registered yet.</string>
+    <string name="dash_your_batch">Your batch</string>
+    <string name="dash_profile_complete">Profile completeness</string>
+    <string name="dash_notices">Notices</string>
+    <string name="dash_missing_title">Missing classmates</string>
+    <string name="dash_missing_sub">Know someone from your batch who has not joined? Help us find them.</string>
+    <string name="dash_i_know_them">I know them</string>
+    <string name="dash_quick_add">Share a contact</string>
+    <string name="dash_batch_found">batchmates found</string>
+    <string name="dash_few_more">A few more details and it is complete.</string>
+    <string name="dash_complete">Complete. Thank you.</string>
+    <string name="dash_view_profile">View profile</string>
+    <string name="dash_ssc">SSC</string>
+    <string name="dash_their_number">Their mobile number</string>
+    <string name="dash_sms_note">We will send them an SMS mentioning your name.</string>
+
+    <!-- Landing -->
+    <string name="landing_hero_sub">Batches 1968–2026 · All alumni, one platform</string>
+    <string name="landing_find_me">Sign Up / Register</string>
+    <string name="landing_find_me_sub">Find your name in our alumni roster</string>
+    <string name="landing_login">Log In</string>
+    <string name="landing_days">days</string>
+    <string name="landing_hours">hrs</string>
+    <string name="landing_mins">min</string>
+    <string name="landing_secs">sec</string>
+    <string name="landing_found_so_far">alumni found</string>
+    <string name="landing_registered">registered</string>
+    <string name="landing_batches">batches</string>
+    <string name="landing_teachers">teachers</string>
+    <string name="landing_batch_coverage">Batch coverage</string>
+    <string name="landing_coverage_note">Gold squares are batches we have barely reached — that is where help is needed.</string>
+    <string name="landing_of_total">of total</string>
+    <string name="landing_cta_title">Is your name on the list?</string>
+    <string name="landing_cta_sub">Less than a minute. No password — just your mobile number.</string>
+    <string name="landing_go_to_dashboard">Go to dashboard</string>
+    <string name="landing_teachers_title">Current teachers</string>
+    <string name="landing_in_memoriam">In memoriam</string>
+    <string name="landing_admin_portal">Admin portal</string>
+
+    <!-- Batches -->
+    <string name="batches_title">Batches</string>
+    <string name="batches_sub">All SSC batches from 1968 to 2026</string>
+    <string name="batches_members">members</string>
+    <string name="batches_found">Found</string>
+    <string name="batches_missing">Missing</string>
+    <string name="batches_memorial">In memoriam</string>
+    <string name="batches_search">Search by year…</string>
+    <string name="batches_your_batch">Your batch</string>
+    <string name="batches_ssc_batch">SSC Batch</string>
+    <string name="batches_no_results">Nothing here</string>
+
+    <!-- Batch detail -->
+    <string name="batch_not_reached">Not yet reached</string>
+    <string name="batch_remembered">Remembered by the batch</string>
+
+    <!-- Profile -->
+    <string name="profile_title">My Profile</string>
+    <string name="profile_name">Full name</string>
+    <string name="profile_batch">Batch year</string>
+    <string name="profile_phone">Mobile number</string>
+    <string name="profile_occupation">Occupation</string>
+    <string name="profile_city">City / location</string>
+    <string name="profile_optional">Optional</string>
+    <string name="profile_optional_hint">Optional — you can add this later</string>
+    <string name="profile_more_details">More details</string>
+    <string name="profile_more_details_sub">These fields are optional and can be added at any time.</string>
+    <string name="profile_email">Email address</string>
+    <string name="profile_gender">Gender</string>
+    <string name="profile_blood">Blood group</string>
+    <string name="profile_dob">Date of birth</string>
+    <string name="profile_saved">Saved!</string>
+    <string name="profile_save">Save changes</string>
+    <string name="profile_update_details">Update your details</string>
+    <string name="profile_privacy_title">Privacy</string>
+    <string name="profile_privacy_body">Your mobile number, email and date of birth are visible only to your own batchmates and the committee admins. They are never shown publicly.</string>
+    <string name="profile_change_photo">Change photo</string>
+    <string name="profile_remove_photo">Remove photo</string>
+    <string name="profile_uploading">Uploading…</string>
+    <string name="profile_photo_hint">JPG, PNG or WebP · max 5 MB</string>
+    <string name="profile_jpg_png">JPG, PNG or WebP</string>
+    <string name="profile_not_set">Not set</string>
+
+    <!-- Gender -->
+    <string name="gender_male">Male</string>
+    <string name="gender_female">Female</string>
+    <string name="gender_other">Other</string>
+
+    <!-- Guests / Registration -->
+    <string name="guests_title">Registration</string>
+    <string name="guests_sub">Register for the Grand Reunion 2027</string>
+    <string name="guests_your_ticket">Your ticket</string>
+    <string name="guests_add_member">Add family member</string>
+    <string name="guests_none">No family members added yet.</string>
+    <string name="guests_submitted">Registration submitted</string>
+    <string name="guests_submitted_sub">Your registration is under review by the committee.</string>
+    <string name="guests_approved">Registration approved</string>
+    <string name="guests_approved_sub">Your registration has been approved. Please pay your coordinator.</string>
+    <string name="guests_rejected">Registration rejected</string>
+    <string name="guests_summary">Cost summary</string>
+    <string name="guests_total">Total</string>
+    <string name="guests_note">Note to committee (optional)</string>
+    <string name="guests_how_to_pay">How to pay</string>
+    <string name="guests_how_to_pay_sub">There is no online payment. Pay your batch coordinator directly — by bKash, Nagad, or cash — then report it here.</string>
+    <string name="guests_coordinator">Your batch coordinator</string>
+    <string name="guests_report_payment">Report payment</string>
+    <string name="guests_pay_confirmed">Payment confirmed</string>
+    <string name="guests_pay_reported">Payment reported — awaiting confirmation</string>
+    <string name="guests_pay_rejected">Payment rejected</string>
+    <string name="guests_pay_method">Payment method</string>
+    <string name="guests_pay_ref">Transaction reference</string>
+    <string name="guests_pay_ref_hint">bKash/Nagad TrxID or bank slip number</string>
+    <string name="guests_pay_amount">Amount</string>
+    <string name="guests_free">Free</string>
+    <string name="guests_tshirt">T-shirt size</string>
+    <string name="guests_food">Food preference</string>
+    <string name="guests_name">Full name</string>
+    <string name="guests_relation">Relation</string>
+    <string name="guests_age">Age</string>
+    <string name="guests_age_hint">Under 5 years is free</string>
+    <string name="guests_full_name">Full name</string>
+    <string name="guests_family_members">Family members</string>
+    <string name="guests_remove">Remove</string>
+
+    <!-- Relations -->
+    <string name="rel_spouse">Spouse</string>
+    <string name="rel_child">Child</string>
+    <string name="rel_parent">Parent</string>
+    <string name="rel_sibling">Sibling</string>
+    <string name="rel_other">Other</string>
+
+    <!-- Food -->
+    <string name="food_regular">Regular</string>
+    <string name="food_no_beef">No beef</string>
+    <string name="food_veg">Vegetarian</string>
+
+    <!-- Payment methods -->
+    <string name="pay_bkash">bKash</string>
+    <string name="pay_nagad">Nagad</string>
+    <string name="pay_rocket">Rocket</string>
+    <string name="pay_bank">Bank transfer</string>
+    <string name="pay_cash">Cash</string>
+    <string name="pay_other">Other</string>
+
+    <!-- CTAs -->
+    <string name="cta_continue">Continue</string>
+    <string name="cta_add">Add</string>
+    <string name="cta_save">Save</string>
+    <string name="cta_submit">Submit</string>
+    <string name="cta_remove">Remove</string>
+    <string name="cta_view_all">View all</string>
+    <string name="cta_try_again">Try again</string>
+
+    <!-- Common -->
+    <string name="common_loading">Loading…</string>
+    <string name="common_error">Something went wrong. Please try again.</string>
+    <string name="common_no_internet">No internet connection</string>
+    <string name="common_taka_symbol">৳</string>
+    <string name="common_or">Or</string>
+    <string name="common_yrs">yrs</string>
+    <string name="common_cancel">Cancel</string>
+
+    <!-- Language toggle -->
+    <string name="lang_toggle">বাংলা</string>
+    <string name="lang_en">English</string>
+
+    <!-- Landing search -->
+    <string name="landing_search_title">Find alumni by batch year</string>
+    <string name="landing_search_hint">e.g. 1998</string>
+    <string name="landing_search_btn">Search</string>
+    <string name="landing_search_empty">No results found for this batch year.</string>
+    <string name="landing_roster">total roster</string>
 </resources>

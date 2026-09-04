@@ -1,33 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <!--
-        Splash-screen theme — applied to MainActivity in the manifest.
-        On API 31+ the OS renders the splash; on older devices the
-        core-splashscreen library emulates it.
-        postSplashScreenTheme switches to the real app theme after the
-        splash finishes.
-    -->
+    <!-- Splash-screen theme applied to MainActivity -->
     <style name="Theme.AlumniApp" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/brand_600</item>
-        <!-- Use the reunion emblem so the system splash blends into our overlay seamlessly. -->
         <item name="windowSplashScreenAnimatedIcon">@drawable/ic_reunion_emblem</item>
-        <!-- Brand green circle behind the icon (matches the overlay background). -->
         <item name="windowSplashScreenIconBackgroundColor">@color/brand_600</item>
         <item name="postSplashScreenTheme">@style/Theme.AlumniApp.Main</item>
     </style>
 
-    <!--
-        Main app theme — no ActionBar (WebView fills the whole window),
-        status bar matches the brand green.
-    -->
-    <style name="Theme.AlumniApp.Main" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+    <!-- Main app theme — used by all activities except MainActivity -->
+    <style name="Theme.AlumniApp.Main" parent="Theme.MaterialComponents.Light.NoActionBar">
         <item name="colorPrimary">@color/brand_600</item>
         <item name="colorPrimaryVariant">@color/brand_700</item>
         <item name="colorOnPrimary">@color/white</item>
         <item name="android:colorBackground">@color/paper</item>
         <item name="android:statusBarColor">@color/brand_600</item>
         <item name="android:windowLightStatusBar">false</item>
+        <item name="android:navigationBarColor">@color/white</item>
+        <item name="colorAccent">@color/brand_600</item>
+        <!-- TextInputLayout -->
+        <item name="colorControlActivated">@color/brand_600</item>
+        <item name="colorControlHighlight">@color/brand_100</item>
+    </style>
+
+    <!-- Full-screen dark hero theme (Landing page header) -->
+    <style name="Theme.AlumniApp.Dark" parent="Theme.AlumniApp.Main">
+        <item name="android:statusBarColor">@color/brand_800</item>
         <item name="android:navigationBarColor">@color/brand_900</item>
     </style>
 
