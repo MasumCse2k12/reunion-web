@@ -3,8 +3,15 @@
 #   cp .env.example .env      # then fill in JWT_SECRET
 #   docker compose up --build
 #
-#   web   http://localhost:8080
-#   api   http://localhost:8090   (Swagger UI at /swagger-ui.html)
+# In production Caddy terminates TLS and is the only thing listening publicly:
+#
+#   https://$PUBLIC_DOMAIN/          web
+#   https://$PUBLIC_DOMAIN/smbc      api   (Swagger UI at /smbc/swagger-ui.html)
+#   https://$PUBLIC_DOMAIN/photos    profile photos out of MinIO
+#
+# The web, api and minio ports below stay on loopback so nothing bypasses TLS;
+# reach them directly only over an SSH tunnel. Set WEB_BIND/API_BIND/MINIO_BIND
+# to 0.0.0.0 for LAN device testing, never on a public host.
 #
 # For day-to-day backend work you usually want the other file — server/docker-compose.yml
 # runs only Postgres and Redis, and you run the service from your IDE against them.
@@ -35,9 +42,8 @@ services:
     volumes:
       - miniodata:/data
     ports:
-      # API on 9000 — default all interfaces for external access.
-      # Set MINIO_BIND=127.0.0.1 in .env to restrict to loopback only.
-      - "${MINIO_BIND:-0.0.0.0}:${MINIO_PORT:-9000}:9000"
+      # API on 9000 — loopback only; the public route is Caddy's /photos.
+      - "${MINIO_BIND:-127.0.0.1}:${MINIO_PORT:-9000}:9000"
       # Web console on 9001 (loopback only — open for ops, never public)
       - "127.0.0.1:${MINIO_CONSOLE_PORT:-9001}:9001"
     healthcheck:
@@ -67,19 +73,20 @@ services:
       OTP_TTL: ${OTP_TTL:-PT5M}
       OTP_MAX_ATTEMPTS: ${OTP_MAX_ATTEMPTS:-5}
       OTP_REQUESTS_PER_HOUR: ${OTP_REQUESTS_PER_HOUR:-5}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080}
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://${PUBLIC_DOMAIN}}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       SWAGGER_ENABLED: ${SWAGGER_ENABLED:-true}
       MINIO_ENDPOINT: ${MINIO_ENDPOINT:-http://minio:9000}
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
       MINIO_BUCKET: ${MINIO_BUCKET:-alumni-photos}
-      # In production, replace this with your public nginx/CDN URL in front of MinIO.
-      MINIO_PUBLIC_BASE_URL: ${MINIO_PUBLIC_BASE_URL:-http://localhost:9000}
-    # Default: all interfaces so the API is reachable externally.
-    # Set API_BIND=127.0.0.1 in .env to restrict to loopback only.
+      # Public URL photos are served from — Caddy's /photos route, which strips
+      # the prefix and forwards to MinIO. Must be https, or Android blocks the
+      # image load and Play flags cleartext transmission of user content.
+      MINIO_PUBLIC_BASE_URL: ${MINIO_PUBLIC_BASE_URL:-https://${PUBLIC_DOMAIN}/photos}
+    # Loopback only — Caddy proxies the public /smbc route over TLS.
     ports:
-      - "${API_BIND:-0.0.0.0}:${API_PORT:-8090}:8090"
+      - "${API_BIND:-127.0.0.1}:${API_PORT:-8090}:8090"
     depends_on:
       redis:
         condition: service_healthy
@@ -91,18 +98,45 @@ services:
     build:
       context: ./web
       args:
-        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://107.167.94.230:8090/smbc}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/smbc}
         VITE_CONTACT_PHONE: ${VITE_CONTACT_PHONE:-01943177909}
     image: sammalani/alumni-web:local
-    # Default: all interfaces so the app is reachable externally.
-    # Set WEB_BIND=127.0.0.1 in .env to restrict to loopback only.
+    # Loopback only — Caddy serves the app publicly over TLS.
     ports:
-      - "${WEB_BIND:-0.0.0.0}:${WEB_PORT:-8080}:${WEB_PORT:-8080}"
+      - "${WEB_BIND:-127.0.0.1}:${WEB_PORT:-8080}:${WEB_PORT:-8080}"
     environment:
       WEB_PORT: "${WEB_PORT:-8080}"
     # No depends_on: the app still resolves everything from src/lib/api.ts and
     # localStorage, so it does not yet call the API. Add one when it does.
     restart: unless-stopped
 
+  caddy:
+    image: caddy:2-alpine
+    # Obtains and renews the Let's Encrypt certificate for PUBLIC_DOMAIN, then
+    # reverse-proxies web, api and minio under it. Unset the domain and the
+    # stack stops here rather than silently serving plaintext.
+    environment:
+      PUBLIC_DOMAIN: ${PUBLIC_DOMAIN:?set PUBLIC_DOMAIN in .env — see .env.example}
+      # Must be non-empty — Caddy's global `email` directive rejects a blank value.
+      ACME_EMAIL: ${ACME_EMAIL:-admin@${PUBLIC_DOMAIN}}
+    ports:
+      - "80:80"
+      - "443:443"
+      # HTTP/3. Harmless if the host firewall drops UDP; clients fall back.
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Issued certificates and ACME account keys. Losing this volume means
+      # re-issuing on next start, and Let's Encrypt rate-limits that.
+      - caddydata:/data
+      - caddyconfig:/config
+    depends_on:
+      - api
+      - web
+      - minio
+    restart: unless-stopped
+
 volumes:
   miniodata:
+  caddydata:
+  caddyconfig:

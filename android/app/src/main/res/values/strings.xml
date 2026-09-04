@@ -137,7 +137,7 @@
     <string name="profile_save">Save changes</string>
     <string name="profile_update_details">Update your details</string>
     <string name="profile_privacy_title">Privacy</string>
-    <string name="profile_privacy_body">Your mobile number, email and date of birth are visible only to your own batchmates and the committee admins. They are never shown publicly.</string>
+    <string name="profile_privacy_body">Batchmates see your name, batch year, occupation, city and photo, and your number with the middle digits hidden. Your email, date of birth, gender and blood group are visible only to committee admins. Nobody who is not signed in sees any of it.</string>
     <string name="profile_change_photo">Change photo</string>
     <string name="profile_remove_photo">Remove photo</string>
     <string name="profile_uploading">Uploading…</string>
@@ -234,4 +234,17 @@
     <string name="landing_search_btn">Search</string>
     <string name="landing_search_empty">No results found for this batch year.</string>
     <string name="landing_roster">total roster</string>
+
+    <!-- Account deletion (required by Google Play for any app with sign-in) -->
+    <string name="account_delete_title">Delete my account</string>
+    <string name="account_delete_cta">Delete account</string>
+    <string name="account_delete_blurb">Permanently removes your profile and the details you entered. Your name and batch year stay on the school roster.</string>
+    <string name="account_delete_confirm_title">Delete your account?</string>
+    <string name="account_delete_confirm_body">This clears your mobile number, email, date of birth, blood group, occupation, city and photo, and signs you out everywhere. Your name and batch year remain on the school roster so a committee admin can restore you if you come back.</string>
+    <string name="account_delete_paid_warning">You have paid %1$s for your reunion ticket. Deleting your account cancels that registration and forfeits the ticket.</string>
+    <string name="account_delete_refund_help">Your number is being deleted too, so nobody can call you back about it. Note your coordinator down before you continue and quote your bKash reference when you call:</string>
+    <string name="account_delete_final_title">Last check</string>
+    <string name="account_delete_final_body">This cannot be undone from the app. Delete your account now?</string>
+    <string name="account_delete_final_cta">Yes, delete it</string>
+    <string name="account_delete_failed">Could not delete your account. Please try again.</string>
 </resources>

@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Camera, CheckCircle2, Save, Trash2 } from 'lucide-react'
 import { api } from '../lib/api'
 import { BLOOD_GROUPS, GENDERS, type BloodGroup, type Gender } from '../mock/data'
@@ -265,11 +266,24 @@ export default function Profile() {
 
       <Card>
         <SectionTitle>{lang === 'bn' ? 'গোপনীয়তা' : 'Privacy'}</SectionTitle>
+        {/* What this says has to match PersonDto.masked, which is what batch
+            pages actually return: name, batch, occupation, city, photo and a
+            masked number. Email, date of birth, gender and blood group are not
+            in it at all. The previous wording promised batchmates more than
+            they ever get, and disagreed with /privacy. */}
         <p className="text-ink-500">
           {lang === 'bn'
-            ? 'আপনার মোবাইল নম্বর, ইমেইল ও জন্ম তারিখ শুধু আপনার ব্যাচের সদস্য এবং কমিটির অ্যাডমিনরা দেখতে পাবেন। কখনোই প্রকাশ্যে দেখানো হবে না।'
-            : 'Your mobile number, email and date of birth are visible only to your own batchmates and the committee admins. They are never shown publicly.'}
+            ? 'আপনার ব্যাচের সদস্যরা আপনার নাম, ব্যাচ, পেশা, শহর ও ছবি দেখতে পান, এবং মোবাইল নম্বরের মাঝের অঙ্কগুলো ঢাকা থাকে। আপনার ইমেইল, জন্ম তারিখ, লিঙ্গ ও রক্তের গ্রুপ শুধু কমিটির অ্যাডমিনরা দেখেন। লগইন না করলে কেউ কিছুই দেখে না।'
+            : 'Batchmates see your name, batch year, occupation, city and photo, and your number with the middle digits hidden. Your email, date of birth, gender and blood group are visible only to committee admins. Nobody who is not signed in sees any of it.'}
         </p>
+        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+          <Link to="/privacy" className="text-sm font-semibold text-brand-700 underline underline-offset-4">
+            {lang === 'bn' ? 'গোপনীয়তা নীতিমালা' : 'Privacy policy'}
+          </Link>
+          <Link to="/account-deletion" className="text-sm font-semibold text-red-500 underline underline-offset-4">
+            {lang === 'bn' ? 'অ্যাকাউন্ট মুছে ফেলুন' : 'Delete my account'}
+          </Link>
+        </div>
       </Card>
     </div>
   )

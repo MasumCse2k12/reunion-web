@@ -348,9 +348,17 @@ export default function Landing() {
               <Phone className="size-5" />
               {t('auth.needHelp')}: {CONTACT_PHONE}
             </a>
-            <Link to="/admin/login" className="text-xs font-semibold text-ink-400 underline underline-offset-4">
-              {t('admin.portal')}
-            </Link>
+            <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+              <Link to="/privacy" className="text-xs font-semibold text-ink-500 underline underline-offset-4">
+                {lang === 'bn' ? 'গোপনীয়তা নীতিমালা' : 'Privacy policy'}
+              </Link>
+              <Link to="/account-deletion" className="text-xs font-semibold text-ink-500 underline underline-offset-4">
+                {lang === 'bn' ? 'অ্যাকাউন্ট মুছুন' : 'Delete account'}
+              </Link>
+              <Link to="/admin/login" className="text-xs font-semibold text-ink-400 underline underline-offset-4">
+                {t('admin.portal')}
+              </Link>
+            </div>
           </div>
         </div>
       </footer>

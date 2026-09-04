@@ -38,6 +38,11 @@ spring:
     enabled: true
     locations: classpath:db/migration
     baseline-on-migrate: true
+    # V6 rewrites stored photo URLs onto the current public base. Kept in sync
+    # with the storage settings below so the two can never drift apart.
+    placeholders:
+      minioPublicBaseUrl: ${MINIO_PUBLIC_BASE_URL:http://192.168.1.103:9000}
+      minioBucket: ${MINIO_BUCKET:alumni-photos}
 
   data:
     redis:

@@ -23,6 +23,9 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
 
     boolean existsByMethodAndReferenceAndStatusNot(PaymentMethod method, String reference, PaymentStatus status);
 
+    /** Every live payment this person made — read when they ask to be deleted. */
+    List<Payment> findByPersonId(UUID personId);
+
     /**
      * The latest payment claim for each registration on a page of the queue —
      * one query for the whole page instead of one per row.

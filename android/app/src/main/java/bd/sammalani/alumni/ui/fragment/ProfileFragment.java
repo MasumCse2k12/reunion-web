@@ -36,6 +36,8 @@ import java.util.Locale;
 import bd.sammalani.alumni.R;
 import bd.sammalani.alumni.api.ApiCallback;
 import bd.sammalani.alumni.api.ApiClient;
+import bd.sammalani.alumni.model.Coordinator;
+import bd.sammalani.alumni.model.DeletionPreview;
 import bd.sammalani.alumni.model.Person;
 import bd.sammalani.alumni.session.SessionManager;
 import bd.sammalani.alumni.ui.LandingActivity;
@@ -51,8 +53,8 @@ public class ProfileFragment extends Fragment {
     private TextView tvName, tvBatch, tvUploadStatus, tvSaveStatus;
     private TextInputEditText etOccupation, etCity, etEmail;
     private Spinner spinnerGender, spinnerBlood;
-    private MaterialButton btnChangePhoto, btnRemovePhoto, btnSave, btnToggleLang, btnLogout;
-    private ProgressBar pbSave;
+    private MaterialButton btnChangePhoto, btnRemovePhoto, btnSave, btnToggleLang, btnLogout, btnDeleteAccount;
+    private ProgressBar pbSave, pbDeleteAccount;
 
     private Uri cameraUri;
     private Person currentPerson;
@@ -103,6 +105,8 @@ public class ProfileFragment extends Fragment {
         pbSave         = view.findViewById(R.id.pbSaveProfile);
         btnToggleLang  = view.findViewById(R.id.btnToggleLang);
         btnLogout      = view.findViewById(R.id.btnLogout);
+        btnDeleteAccount = view.findViewById(R.id.btnDeleteAccount);
+        pbDeleteAccount  = view.findViewById(R.id.pbDeleteAccount);
 
         setupSpinners();
 
@@ -113,6 +117,7 @@ public class ProfileFragment extends Fragment {
         btnToggleLang.setText(isBn ? getString(R.string.lang_en) : getString(R.string.lang_toggle));
         btnToggleLang.setOnClickListener(v -> toggleLang());
         btnLogout.setOnClickListener(v -> logout());
+        btnDeleteAccount.setOnClickListener(v -> startAccountDeletion());
 
         loadProfile();
     }
@@ -319,6 +324,101 @@ public class ProfileFragment extends Fragment {
         Intent intent = new Intent(requireContext(), LandingActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
+    }
+
+    /* ── Account deletion ──────────────────────────────────────────────────
+     *
+     * Google Play requires an in-app route to delete the account, and this is
+     * it. Three steps on purpose: ask the server what it would cost, show the
+     * member that answer, then make them confirm a second time.
+     *
+     * The middle step is the one that matters. Deleting the account clears the
+     * mobile number, and the mobile number is the only way the committee had of
+     * reaching this member — so if they have paid for a ticket, the coordinator
+     * they would need to call about a refund has to be put on screen while they
+     * can still read it. Afterwards is too late for everybody.
+     */
+
+    private void startAccountDeletion() {
+        setDeleting(true);
+        ApiClient.get().deletionPreview(new ApiCallback<DeletionPreview>() {
+            @Override public void onSuccess(DeletionPreview preview) {
+                if (getContext() == null) return;
+                setDeleting(false);
+                confirmAccountDeletion(preview);
+            }
+            @Override public void onError(String en, String bn) {
+                if (getContext() == null) return;
+                setDeleting(false);
+                toast(en, bn);
+            }
+        });
+    }
+
+    private void confirmAccountDeletion(DeletionPreview preview) {
+        boolean bn = SessionManager.get(requireContext()).isBn();
+
+        StringBuilder message = new StringBuilder(getString(R.string.account_delete_confirm_body));
+        if (preview != null && preview.hasPaid()) {
+            message.append("\n\n")
+                    .append(getString(R.string.account_delete_paid_warning, Fmt.money(preview.amountPaid, bn)))
+                    .append("\n\n")
+                    .append(getString(R.string.account_delete_refund_help));
+            if (preview.coordinators != null) {
+                for (Coordinator coordinator : preview.coordinators) {
+                    message.append("\n• ").append(coordinator.displayName())
+                            .append(" — ").append(Fmt.phone(coordinator.phone, bn));
+                }
+            }
+        }
+
+        new android.app.AlertDialog.Builder(requireContext())
+                .setTitle(getString(R.string.account_delete_confirm_title))
+                .setMessage(message.toString())
+                .setPositiveButton(getString(R.string.account_delete_cta), (d, w) -> confirmAgain())
+                .setNegativeButton(getString(R.string.common_cancel), null)
+                .show();
+    }
+
+    /** The second confirmation. Nothing here is recoverable from the app. */
+    private void confirmAgain() {
+        new android.app.AlertDialog.Builder(requireContext())
+                .setTitle(getString(R.string.account_delete_final_title))
+                .setMessage(getString(R.string.account_delete_final_body))
+                .setPositiveButton(getString(R.string.account_delete_final_cta), (d, w) -> doDeleteAccount())
+                .setNegativeButton(getString(R.string.common_cancel), null)
+                .show();
+    }
+
+    private void doDeleteAccount() {
+        setDeleting(true);
+        ApiClient.get().deleteAccount(new ApiCallback<Void>() {
+            @Override public void onSuccess(Void v) {
+                if (getContext() == null) return;
+                // The session died with the account; there is nothing left to log
+                // out of, so the tokens are simply dropped.
+                SessionManager.get(requireContext()).clearTokens();
+                Intent intent = new Intent(requireContext(), LandingActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                startActivity(intent);
+            }
+            @Override public void onError(String en, String b) {
+                if (getContext() == null) return;
+                setDeleting(false);
+                toast(en != null ? en : getString(R.string.account_delete_failed), b);
+            }
+        });
+    }
+
+    private void setDeleting(boolean busy) {
+        btnDeleteAccount.setEnabled(!busy);
+        pbDeleteAccount.setVisibility(busy ? View.VISIBLE : View.GONE);
+    }
+
+    private void toast(String en, String bn) {
+        boolean isBn = SessionManager.get(requireContext()).isBn();
+        String message = isBn && bn != null && !bn.isEmpty() ? bn : en;
+        android.widget.Toast.makeText(requireContext(), message, android.widget.Toast.LENGTH_LONG).show();
     }
 
     private String getText(TextInputEditText et) {

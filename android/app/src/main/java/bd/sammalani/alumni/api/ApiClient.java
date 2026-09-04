@@ -21,6 +21,7 @@ import java.util.concurrent.Executors;
 import bd.sammalani.alumni.BuildConfig;
 import bd.sammalani.alumni.model.Batch;
 import bd.sammalani.alumni.model.Coordinator;
+import bd.sammalani.alumni.model.DeletionPreview;
 import bd.sammalani.alumni.model.EventInfo;
 import bd.sammalani.alumni.model.Notice;
 import bd.sammalani.alumni.model.Person;
@@ -361,6 +362,22 @@ public class ApiClient {
                 deliverError(cb, "Upload failed. Check your connection.", "আপলোড ব্যর্থ হয়েছে।");
             }
         });
+    }
+
+    /** What deleting the account would cost — shown before asking to confirm. */
+    public void deletionPreview(ApiCallback<DeletionPreview> cb) {
+        get("/api/v1/me/deletion-preview", DeletionPreview.class, true, cb);
+    }
+
+    /**
+     * Deletes the account and everything behind it. Required by Google Play for
+     * any app that lets a user create one.
+     * <p>
+     * The session is dead the moment this returns, so the caller's only correct
+     * next move is to clear the tokens and go back to the landing screen.
+     */
+    public void deleteAccount(ApiCallback<Void> cb) {
+        delete("/api/v1/me", Void.class, cb);
     }
 
     public void deletePhoto(ApiCallback<Person> cb) {

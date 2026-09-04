@@ -33,6 +33,7 @@ public class ProfileController {
 
     private final PersonRepository people;
     private final StorageService storage;
+    private final AccountDeletionService deletion;
 
     @GetMapping
     @Operation(summary = "Who am I")
@@ -95,6 +96,27 @@ public class ProfileController {
             person.setPhotoUrl(null);
             people.save(person);
         }
+    }
+
+    @GetMapping("/deletion-preview")
+    @Operation(summary = "What deleting my account would cost me",
+            description = "Read this before showing the confirmation, so the member is told about "
+                    + "a paid ticket and given a coordinator to call about it while they still have "
+                    + "the app open. Deleting removes the phone number, which is the only way anyone "
+                    + "had of contacting them.")
+    public AccountDeletionService.DeletionPreview deletionPreview() {
+        return deletion.preview(CurrentUser.member().personId());
+    }
+
+    @DeleteMapping
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Delete my account and my data",
+            description = "Required by Google Play for any app that lets a user create an account. "
+                    + "Clears everything the member supplied, deletes their photo from storage and "
+                    + "tombstones the record. Confirmed payments survive, flagged for refund — see "
+                    + "AccountDeletionService for what is kept and why.")
+    public void deleteAccount() {
+        deletion.delete(CurrentUser.member().personId());
     }
 
     private Person currentPerson() {

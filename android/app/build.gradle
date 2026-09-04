@@ -20,20 +20,41 @@ if (keystorePropsFile.exists()) {
 def keystorePath = System.getenv('KEYSTORE_FILE') ?: keystoreProps.getProperty('storeFile')
 def hasSigningConfig = keystorePath != null && rootProject.file(keystorePath).exists()
 
+// Production API base URL — the one place it is written down.
+// Point it at the hostname Caddy holds the certificate for (PUBLIC_DOMAIN in
+// the server's .env), not at an IP: an IP cannot have a public TLS certificate,
+// and an IP baked into a shipped APK cannot be redirected if the server moves.
+// Override without editing this file:  -PapiBaseUrl=…  or  API_BASE_URL=…
+def prodApiBaseUrl = System.getenv('API_BASE_URL') ?:
+        (project.findProperty('apiBaseUrl') ?: 'https://sammalani.example.com/smbc')
+def contactPhone = '01943177909'
+
+// A release build must never ship a cleartext URL. Shipping one is what got
+// versionCode 5 and 12 rejected under Play's User Data policy — this app sends
+// phone numbers, OTP codes, auth tokens and photos. Fail the build here rather
+// than wait a week to fail the review.
+gradle.taskGraph.whenReady { graph ->
+    boolean releasing = graph.allTasks.any { it.name.toLowerCase().contains('release') }
+    if (releasing && !prodApiBaseUrl.startsWith('https://')) {
+        throw new GradleException(
+                "Release builds require an https:// API_BASE_URL, got: ${prodApiBaseUrl}\n" +
+                "Set it with -PapiBaseUrl=https://your.domain/smbc or API_BASE_URL=…")
+    }
+}
+
 android {
     namespace 'bd.sammalani.alumni'
-    compileSdk 35
+    compileSdk 36
 
     defaultConfig {
         applicationId "bd.sammalani.alumni"
         minSdk 21          // Android 5.0 — covers 99 %+ of active devices
-        targetSdk 35
-        versionCode 12    // 5 was consumed by the rejected WebView build
+        targetSdk 36
+        versionCode 13    // 5 = rejected WebView build; 12 = rejected targetSdk 35 build
         versionName "2.0.0"
 
-        // Production API base URL — override per buildType below.
-        buildConfigField "String", "API_BASE_URL", '"http://107.167.94.230:8090/smbc"'
-        buildConfigField "String", "CONTACT_PHONE", '"01943177909"'
+        buildConfigField "String", "API_BASE_URL", "\"${prodApiBaseUrl}\""
+        buildConfigField "String", "CONTACT_PHONE", "\"${contactPhone}\""
     }
 
     signingConfigs {
@@ -51,11 +72,12 @@ android {
         debug {
             debuggable true
             applicationIdSuffix ".debug"
-            // Falls back to the emulator alias; override in local.properties:
+            // Cleartext to a LAN address is fine here — src/debug/AndroidManifest.xml
+            // permits it for debug builds only. Override in local.properties:
             //   dev.api_base_url=http://192.168.1.x:8090/smbc
-            def devApi = localProps.getProperty('dev.api_base_url', 'http://107.167.94.230:8090/smbc')
+            def devApi = localProps.getProperty('dev.api_base_url', prodApiBaseUrl)
             buildConfigField "String", "API_BASE_URL", "\"${devApi}\""
-            buildConfigField "String", "CONTACT_PHONE", '"01943177909"'
+            buildConfigField "String", "CONTACT_PHONE", "\"${contactPhone}\""
         }
         release {
             if (hasSigningConfig) {
@@ -64,8 +86,8 @@ android {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            buildConfigField "String", "API_BASE_URL", '"http://107.167.94.230:8090/smbc"'
-            buildConfigField "String", "CONTACT_PHONE", '"01943177909"'
+            buildConfigField "String", "API_BASE_URL", "\"${prodApiBaseUrl}\""
+            buildConfigField "String", "CONTACT_PHONE", "\"${contactPhone}\""
         }
     }
 

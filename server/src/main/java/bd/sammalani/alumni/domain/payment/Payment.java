@@ -85,6 +85,15 @@ public class Payment extends Auditable implements AuditBatchScoped {
     @Column(name = "reported_at", nullable = false)
     private Instant reportedAt = Instant.now();
 
+    /**
+     * Set when the payer deleted their account while this money was confirmed.
+     * The row outlives them deliberately; this is the marker a coordinator
+     * filters on when the ex-member phones up asking for it back, matched on
+     * {@link #reference} because there is no longer a name or number to match on.
+     */
+    @Column(name = "refund_pending", nullable = false)
+    private boolean refundPending = false;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 16)
     private PaymentStatus status = PaymentStatus.REPORTED;

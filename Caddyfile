@@ -1,0 +1,52 @@
+# Single public entry point for the whole platform.
+#
+# Everything reaches users through this one hostname over HTTPS. Caddy obtains
+# and renews a Let's Encrypt certificate for {$PUBLIC_DOMAIN} on its own, and
+# redirects :80 to :443 without being told to.
+#
+# The hostname must already resolve to this server's public IP before the stack
+# starts — ACME validates by connecting back to it over port 80.
+#
+#   https://<domain>/          → the React SPA        (web:8080)
+#   https://<domain>/smbc/*    → the Spring Boot API  (api:8090)
+#   https://<domain>/photos/*  → profile photos       (minio:9000)
+#
+# One origin for all three is deliberate: the browser app calls the API
+# same-origin so CORS never enters the picture, and the Android app has exactly
+# one hostname baked into it.
+{
+	email {$ACME_EMAIL}
+}
+
+{$PUBLIC_DOMAIN} {
+	encode zstd gzip
+
+	header {
+		# Once a browser has seen this, it refuses to talk to us over http://
+		# at all. Add includeSubDomains only when every subdomain is on TLS too.
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+
+	# Spring Boot owns the /smbc context path itself (SERVER_CONTEXT_PATH), so
+	# the prefix is passed through intact rather than stripped.
+	handle /smbc/* {
+		reverse_proxy api:8090
+	}
+
+	# StorageService builds photo URLs as <public-base>/<bucket>/<key>, and
+	# public-base is https://<domain>/photos. handle_path strips the /photos
+	# prefix, so MinIO receives /<bucket>/<key> — the path-style request it
+	# expects. Anonymous reads only; the console on :9001 is never proxied.
+	handle_path /photos/* {
+		reverse_proxy minio:9000
+	}
+
+	# React Router owns every remaining URL.
+	handle {
+		reverse_proxy web:8080
+	}
+}

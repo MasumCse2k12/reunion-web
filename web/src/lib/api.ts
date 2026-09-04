@@ -3,8 +3,11 @@
  *  HTTP API CLIENT
  * ============================================================================
  *  Every screen in this app talks to the Spring Boot backend through this file.
- *  Set VITE_API_BASE_URL at BUILD time (Vite inlines it). Without it this
- *  falls back to the production server, so a misconfigured build still works.
+ *  Set VITE_API_BASE_URL at BUILD time (Vite inlines it). It defaults to the
+ *  relative path '/smbc', because in production Caddy serves this app and the
+ *  API from the same origin — so no hostname is baked into the bundle and the
+ *  build works under any domain. Override it with a full https:// URL only if
+ *  the app is hosted apart from the API.
  * ============================================================================
  */
 
@@ -25,7 +28,7 @@ import {
   type TicketType,
 } from '../mock/data'
 
-const BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://107.167.94.230:8090/smbc'
+const BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? '/smbc'
 
 export const CONTACT_PHONE = (import.meta.env.VITE_CONTACT_PHONE as string | undefined) ?? '01943177909'
 
@@ -605,6 +608,21 @@ export type {
 // prices and dates while believing they came from the server. Both now come
 // from `api.event()`.
 
+/**
+ * What an account deletion would cost the member, read before they confirm it.
+ *
+ * `coordinators` is the part that matters: deleting the account clears the
+ * mobile number, which is the only way the committee had of reaching them. So
+ * anyone owed a refund has to be shown who to call while they can still read it.
+ */
+export type DeletionPreview = {
+  hasRegistration: boolean
+  registrationStatus: string | null
+  amountPaid: number
+  refundPending: boolean
+  coordinators: { id: string; name: string; nameBn: string | null; phone: string }[]
+}
+
 /* ------------------------------------------------------------------ */
 /* Member API                                                           */
 /* ------------------------------------------------------------------ */
@@ -657,6 +675,23 @@ export const api = {
 
   async deletePhoto(): Promise<void> {
     await memberHttp<void>('DELETE', '/api/v1/me/photo')
+  },
+
+  async deletionPreview(): Promise<DeletionPreview> {
+    return memberHttp<DeletionPreview>('GET', '/api/v1/me/deletion-preview')
+  },
+
+  /**
+   * Deletes the account and the data behind it. Google Play requires both an
+   * in-app route and a web one; `/account-deletion` is the web one.
+   *
+   * The session dies with the account, so the stored tokens are dropped here
+   * rather than left for a later call to fail on.
+   */
+  async deleteAccount(): Promise<void> {
+    await memberHttp<void>('DELETE', '/api/v1/me')
+    localStorage.removeItem(MEMBER_ACCESS)
+    localStorage.removeItem(MEMBER_REFRESH)
   },
 
   async updateMe(patch: Partial<Person>): Promise<Person> {

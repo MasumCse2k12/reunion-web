@@ -35,6 +35,8 @@ import Guests from './pages/Guests'
 import Batches from './pages/Batches'
 import BatchDetail from './pages/BatchDetail'
 import Profile from './pages/Profile'
+import Privacy from './pages/Privacy'
+import DeleteAccount from './pages/DeleteAccount'
 import AdminLogin from './pages/admin/AdminLogin'
 import AdminLayout from './pages/admin/AdminLayout'
 import AdminOverview from './pages/admin/AdminOverview'
@@ -74,6 +76,12 @@ export default function App() {
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+
+            {/* Both public on purpose: Google Play requires the policy and the
+                deletion route to be reachable without installing the app or
+                signing in. DeleteAccount does its own phone + code check. */}
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/account-deletion" element={<DeleteAccount />} />
 
             <Route
               path="/app"

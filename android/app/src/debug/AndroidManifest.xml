@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    DEBUG-ONLY manifest overlay.
+
+    The release manifest carries no networkSecurityConfig at all: release builds
+    talk to the API over HTTPS and nothing else, which is what Play's User Data
+    policy requires of an app that sends phone numbers, OTP codes and tokens.
+
+    Development still needs plain HTTP to a LAN address, so the cleartext
+    permission and the user-CA trust anchor (Charles, Proxyman, mitmproxy) are
+    attached here — merged into debug builds only, never into a release AAB.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <application
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:usesCleartextTraffic="true"
+        tools:replace="android:usesCleartextTraffic" />
+
+</manifest>

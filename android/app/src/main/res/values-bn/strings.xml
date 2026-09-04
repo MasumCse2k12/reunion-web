@@ -121,7 +121,7 @@
     <string name="profile_save">সংরক্ষণ করুন</string>
     <string name="profile_update_details">তথ্য হালনাগাদ করুন</string>
     <string name="profile_privacy_title">গোপনীয়তা</string>
-    <string name="profile_privacy_body">আপনার মোবাইল নম্বর, ইমেইল ও জন্ম তারিখ শুধু আপনার ব্যাচের সদস্য এবং কমিটির অ্যাডমিনরা দেখতে পাবেন।</string>
+    <string name="profile_privacy_body">আপনার ব্যাচের সদস্যরা আপনার নাম, ব্যাচ, পেশা, শহর ও ছবি দেখতে পান, এবং মোবাইল নম্বরের মাঝের অঙ্কগুলো ঢাকা থাকে। আপনার ইমেইল, জন্ম তারিখ, লিঙ্গ ও রক্তের গ্রুপ শুধু কমিটির অ্যাডমিনরা দেখেন। লগইন না করলে কেউ কিছুই দেখে না।</string>
     <string name="profile_change_photo">ছবি পরিবর্তন করুন</string>
     <string name="profile_remove_photo">ছবি মুছুন</string>
     <string name="profile_uploading">আপলোড হচ্ছে…</string>
@@ -209,4 +209,17 @@
     <string name="landing_search_hint">যেমন: ১৯৯৮</string>
     <string name="landing_search_btn">খুঁজুন</string>
     <string name="landing_search_empty">এই ব্যাচের বছরে কোনো ফলাফল পাওয়া যায়নি।</string>
+
+    <!-- অ্যাকাউন্ট মুছে ফেলা (গুগল প্লে-র বাধ্যতামূলক শর্ত) -->
+    <string name="account_delete_title">আমার অ্যাকাউন্ট মুছে ফেলুন</string>
+    <string name="account_delete_cta">অ্যাকাউন্ট মুছুন</string>
+    <string name="account_delete_blurb">আপনার প্রোফাইল ও দেওয়া তথ্য স্থায়ীভাবে মুছে যাবে। নাম ও ব্যাচ স্কুলের তালিকায় থেকে যাবে।</string>
+    <string name="account_delete_confirm_title">অ্যাকাউন্ট মুছে ফেলবেন?</string>
+    <string name="account_delete_confirm_body">আপনার মোবাইল নম্বর, ইমেইল, জন্ম তারিখ, রক্তের গ্রুপ, পেশা, শহর ও ছবি মুছে যাবে এবং সব জায়গা থেকে লগ আউট হয়ে যাবেন। নাম ও ব্যাচ স্কুলের তালিকায় থাকবে, যাতে আপনি ফিরে এলে কমিটির অ্যাডমিন আবার ফিরিয়ে আনতে পারেন।</string>
+    <string name="account_delete_paid_warning">আপনি পুনর্মিলনীর টিকিটের জন্য %1$s পরিশোধ করেছেন। অ্যাকাউন্ট মুছলে সেই নিবন্ধন বাতিল হবে এবং টিকিটটি আর থাকবে না।</string>
+    <string name="account_delete_refund_help">আপনার নম্বরটিও মুছে যাচ্ছে, তাই কেউ আপনাকে ফোন করে জানাতে পারবে না। এগিয়ে যাওয়ার আগে সমন্বয়কারীর নম্বরটি লিখে রাখুন এবং ফোন করার সময় আপনার বিকাশ রেফারেন্স বলুন:</string>
+    <string name="account_delete_final_title">শেষ নিশ্চিতকরণ</string>
+    <string name="account_delete_final_body">অ্যাপ থেকে এটি আর ফেরানো যাবে না। এখনই অ্যাকাউন্ট মুছে ফেলবেন?</string>
+    <string name="account_delete_final_cta">হ্যাঁ, মুছে ফেলুন</string>
+    <string name="account_delete_failed">অ্যাকাউন্ট মুছে ফেলা যায়নি। আবার চেষ্টা করুন।</string>
 </resources>

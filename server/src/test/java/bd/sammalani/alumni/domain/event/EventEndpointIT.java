@@ -93,8 +93,11 @@ class EventEndpointIT {
         // here and give the browser an unparseable date, so assert the shape.
         JsonNode startsAt = body.get("startsAt");
         assertThat(startsAt.isString()).isTrue();
+        // 12 February 2027, 09:00 Dhaka (+06). The date lives in
+        // V2__reference_data.sql, which is the only place it is decided — change
+        // it there and this line has to follow, or the build says so.
         assertThat(java.time.Instant.parse(startsAt.asString()))
-                .isEqualTo(java.time.Instant.parse("2027-03-11T03:00:00Z"));
+                .isEqualTo(java.time.Instant.parse("2027-02-12T03:00:00Z"));
     }
 
     @Test
