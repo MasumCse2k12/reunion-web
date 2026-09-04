@@ -116,6 +116,8 @@ public class BatchesFragment extends Fragment implements BatchAdapter.OnBatchCli
     public void onBatchClick(Batch batch) {
         Intent intent = new Intent(requireContext(), BatchDetailActivity.class);
         intent.putExtra("batchYear", batch.year);
+        intent.putExtra("rosterCount", batch.rosterCount);
+        intent.putExtra("claimedCount", batch.claimedCount);
         startActivity(intent);
     }
 }

@@ -50,7 +50,7 @@ android {
         applicationId "bd.sammalani.alumni"
         minSdk 21          // Android 5.0 — covers 99 %+ of active devices
         targetSdk 37
-        versionCode 24    // 5 = rejected WebView build; 12 = rejected targetSdk 35 build
+        versionCode 21    // 5 = rejected WebView build; 12 = rejected targetSdk 35 build
         versionName "2.0.1"
 
         buildConfigField "String", "API_BASE_URL", "\"${prodApiBaseUrl}\""

@@ -38,6 +38,8 @@ public class BatchDetailActivity extends AppCompatActivity {
     private final List<Person> members = new ArrayList<>();
 
     private int batchYear;
+    private int rosterCount;
+    private int claimedCount;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,17 +65,32 @@ public class BatchDetailActivity extends AppCompatActivity {
 
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
 
-        batchYear = getIntent().getIntExtra("batchYear", 0);
+        batchYear    = getIntent().getIntExtra("batchYear", 0);
+        rosterCount  = getIntent().getIntExtra("rosterCount", 0);
+        claimedCount = getIntent().getIntExtra("claimedCount", 0);
         boolean bn = SessionManager.get(this).isBn();
 
         tvToolbarTitle.setText((bn ? "ব্যাচ " : "Batch ") + Fmt.year(batchYear, bn));
         tvBatchYear.setText(Fmt.year(batchYear, bn));
+
+        // Show header stats immediately using the same values as the batch list card
+        bindHeaderStats(bn);
 
         adapter = new MemberAdapter(members, bn, null);
         rvMembers.setLayoutManager(new LinearLayoutManager(this));
         rvMembers.setAdapter(adapter);
 
         loadMembers(bn);
+    }
+
+    private void bindHeaderStats(boolean bn) {
+        int missing = rosterCount - claimedCount;
+        int pct = rosterCount > 0 ? (claimedCount * 100 / rosterCount) : 0;
+        tvBatchStats.setText(
+                Fmt.number(claimedCount, bn) + " " + getString(R.string.batches_found) +
+                "  ·  " +
+                Fmt.number(missing, bn) + " " + getString(R.string.batches_missing));
+        progressBatch.setProgress(pct);
     }
 
     private void loadMembers(boolean bn) {
@@ -85,21 +102,6 @@ public class BatchDetailActivity extends AppCompatActivity {
                 if (isDestroyed()) return;
                 tvLoading.setVisibility(View.GONE);
                 rvMembers.setVisibility(View.VISIBLE);
-
-                int total = people.size();
-                int found = 0;
-                for (Person p : people) {
-                    if ("CLAIMED".equals(p.status) || "VERIFIED".equals(p.status)) found++;
-                }
-                int missing = total - found;
-                int pct = total > 0 ? (found * 100 / total) : 0;
-
-                tvBatchStats.setText(
-                        Fmt.number(found, bn) + " " + getString(R.string.batches_found) +
-                        "  ·  " +
-                        Fmt.number(missing, bn) + " " + getString(R.string.batches_missing));
-                progressBatch.setProgress(pct);
-
                 members.clear();
                 members.addAll(people);
                 adapter.setData(new ArrayList<>(members));
