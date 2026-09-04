@@ -5,7 +5,7 @@ public class Person {
     public String name;
     public String nameBn;
     public int batchYear;
-    public String status; // "SEEDED" | "CLAIMED"
+    public String status; // "SEEDED" | "CLAIMED" | "VERIFIED" | "REJECTED"
     public String phone;
     public String email;
     public String gender;

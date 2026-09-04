@@ -9,6 +9,7 @@ import androidx.fragment.app.Fragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import bd.sammalani.alumni.R;
+import bd.sammalani.alumni.util.LocaleHelper;
 import bd.sammalani.alumni.api.ApiClient;
 import bd.sammalani.alumni.session.SessionManager;
 import bd.sammalani.alumni.ui.fragment.BatchesFragment;
@@ -17,6 +18,12 @@ import bd.sammalani.alumni.ui.fragment.GuestsFragment;
 import bd.sammalani.alumni.ui.fragment.ProfileFragment;
 
 public class HomeActivity extends AppCompatActivity {
+
+    @Override
+    protected void attachBaseContext(android.content.Context newBase) {
+        String lang = SessionManager.get(newBase).getLang();
+        super.attachBaseContext(LocaleHelper.apply(newBase, lang));
+    }
 
     private BottomNavigationView bottomNav;
     private int currentItemId = -1;

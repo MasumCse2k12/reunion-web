@@ -103,6 +103,11 @@ public class ApiClient {
         }
     }
 
+    // Serialises token refresh so concurrent 401s don't trigger duplicate refresh calls.
+    // Without this, two simultaneous authenticated requests can both get 401, both attempt
+    // a refresh, and the second refresh fails (old token already consumed) → session expiry.
+    private final Object refreshLock = new Object();
+
     /** Executes a request, refreshes token on 401, then delivers result on main thread. */
     private <T> void execute(Request req, Type type, boolean allowRefresh, ApiCallback<T> cb) {
         exec.submit(() -> {
@@ -110,35 +115,42 @@ public class ApiClient {
                 Response res = http.newCall(req).execute();
 
                 if (res.code() == 401 && allowRefresh) {
-                    // Try to refresh
-                    String refresh = session.getRefreshToken();
-                    if (refresh != null) {
-                        JsonObject body = new JsonObject();
-                        body.addProperty("refreshToken", refresh);
-                        Request refreshReq = new Request.Builder()
-                            .url(base + "/api/v1/auth/refresh")
-                            .post(jsonBody(body))
-                            .build();
-                        Response refreshRes = http.newCall(refreshReq).execute();
-                        if (refreshRes.isSuccessful() && refreshRes.body() != null) {
-                            JsonObject s = gson.fromJson(refreshRes.body().string(), JsonObject.class);
-                            String newAccess  = s.get("accessToken").getAsString();
-                            String newRefresh = s.get("refreshToken").getAsString();
-                            session.saveTokens(newAccess, newRefresh);
-                            // Retry original request with new token
-                            Request retry = req.newBuilder()
-                                .header("Authorization", "Bearer " + newAccess)
-                                .build();
-                            res = http.newCall(retry).execute();
-                        } else {
-                            session.clearTokens();
+                    // Remember which refresh token caused the 401, then take the lock.
+                    // If another thread already refreshed by the time we enter the block,
+                    // the saved refresh token will have changed — just retry without refreshing.
+                    String refreshAtStart = session != null ? session.getRefreshToken() : null;
+                    synchronized (refreshLock) {
+                        String currentRefresh = session != null ? session.getRefreshToken() : null;
+                        if (currentRefresh == null) {
                             notifySessionExpired();
                             return;
                         }
-                    } else {
-                        session.clearTokens();
-                        notifySessionExpired();
-                        return;
+                        if (currentRefresh.equals(refreshAtStart)) {
+                            // No other thread refreshed yet — do it ourselves.
+                            JsonObject body = new JsonObject();
+                            body.addProperty("refreshToken", currentRefresh);
+                            Request refreshReq = new Request.Builder()
+                                .url(base + "/api/v1/auth/refresh")
+                                .post(jsonBody(body))
+                                .build();
+                            Response refreshRes = http.newCall(refreshReq).execute();
+                            if (refreshRes.isSuccessful() && refreshRes.body() != null) {
+                                JsonObject s = gson.fromJson(refreshRes.body().string(), JsonObject.class);
+                                String newAccess  = s.get("accessToken").getAsString();
+                                String newRefresh = s.get("refreshToken").getAsString();
+                                session.saveTokens(newAccess, newRefresh);
+                            } else {
+                                session.clearTokens();
+                                notifySessionExpired();
+                                return;
+                            }
+                        }
+                        // Either we just refreshed or another thread did — retry with current token.
+                        String newAccess = session.getAccessToken();
+                        Request retry = req.newBuilder()
+                            .header("Authorization", "Bearer " + newAccess)
+                            .build();
+                        res = http.newCall(retry).execute();
                     }
                 }
 
@@ -390,7 +402,7 @@ public class ApiClient {
     // ── Batches ──────────────────────────────────────────────────────────
 
     public void getBatches(ApiCallback<List<Batch>> cb) {
-        Type type = new TypeToken<List<Batch>>(){}.getType();
+        Type type = TypeToken.getParameterized(List.class, Batch.class).getType();
         get("/api/v1/batches", type, false, cb);
     }
 
@@ -408,17 +420,17 @@ public class ApiClient {
     }
 
     public void getBatchMembers(int year, ApiCallback<List<Person>> cb) {
-        Type type = new TypeToken<List<Person>>(){}.getType();
+        Type type = TypeToken.getParameterized(List.class, Person.class).getType();
         get("/api/v1/batches/" + year + "/members", type, true, cb);
     }
 
     public void getMissingFromBatch(int year, ApiCallback<List<Person>> cb) {
-        Type type = new TypeToken<List<Person>>(){}.getType();
+        Type type = TypeToken.getParameterized(List.class, Person.class).getType();
         get("/api/v1/batches/" + year + "/missing", type, true, cb);
     }
 
     public void lookupBatch(int year, String query, ApiCallback<List<Person>> cb) {
-        Type type = new TypeToken<List<Person>>(){}.getType();
+        Type type = TypeToken.getParameterized(List.class, Person.class).getType();
         String path = "/api/v1/public/lookup?batchYear=" + year;
         if (query != null && !query.trim().isEmpty()) {
             try {
@@ -437,7 +449,7 @@ public class ApiClient {
     // ── Notices ──────────────────────────────────────────────────────────
 
     public void getNotices(ApiCallback<List<Notice>> cb) {
-        Type type = new TypeToken<List<Notice>>(){}.getType();
+        Type type = TypeToken.getParameterized(List.class, Notice.class).getType();
         get("/api/v1/notices", type, false, cb);
     }
 
@@ -474,7 +486,7 @@ public class ApiClient {
     }
 
     public void getCoordinators(ApiCallback<List<Coordinator>> cb) {
-        Type type = new TypeToken<List<Coordinator>>(){}.getType();
+        Type type = TypeToken.getParameterized(List.class, Coordinator.class).getType();
         get("/api/v1/me/registration/coordinators", type, true, cb);
     }
 

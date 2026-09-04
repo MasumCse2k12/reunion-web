@@ -18,6 +18,7 @@ import bd.sammalani.alumni.api.ApiClient;
 import bd.sammalani.alumni.session.SessionManager;
 import bd.sammalani.alumni.ui.HomeActivity;
 import bd.sammalani.alumni.ui.LandingActivity;
+import bd.sammalani.alumni.util.LocaleHelper;
 
 /**
  * Entry point: shows the Grand Reunion 2027 branded splash animation,
@@ -38,13 +39,23 @@ public class MainActivity extends AppCompatActivity {
     private boolean loggedIn = false;
 
     @Override
+    protected void attachBaseContext(android.content.Context newBase) {
+        String lang = SessionManager.get(newBase).getLang();
+        super.attachBaseContext(LocaleHelper.apply(newBase, lang));
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         SplashScreen.installSplashScreen(this);
         super.onCreate(savedInstanceState);
 
-        // Apply saved locale before inflation (default: Bangla for new installs)
+        // Apply saved locale before inflation — only if it differs from the current app locale
+        // so that we don't trigger an unnecessary activity recreation on every cold start.
         String lang = SessionManager.get(this).getLang();
-        AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(lang));
+        LocaleListCompat target = LocaleListCompat.forLanguageTags(lang);
+        if (!AppCompatDelegate.getApplicationLocales().equals(target)) {
+            AppCompatDelegate.setApplicationLocales(target);
+        }
 
         setContentView(R.layout.activity_main);
 
@@ -78,6 +89,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void navigate() {
+        if (isFinishing() || isDestroyed()) return;
         dismissSplash();
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             Intent intent = loggedIn

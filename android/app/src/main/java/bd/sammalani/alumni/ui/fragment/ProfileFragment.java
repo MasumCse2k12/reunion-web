@@ -340,6 +340,17 @@ public class ProfileFragment extends Fragment {
      */
 
     private void startAccountDeletion() {
+        boolean bn = SessionManager.get(requireContext()).isBn();
+        new android.app.AlertDialog.Builder(requireContext())
+                .setTitle(bn ? "অ্যাকাউন্ট মুছে ফেলবেন?" : "Delete account?")
+                .setMessage(bn ? "আপনি কি সত্যিই আপনার অ্যাকাউন্ট মুছে ফেলতে চান?"
+                               : "Are you sure you want to delete your account?")
+                .setPositiveButton(bn ? "হ্যাঁ" : "Yes", (d, w) -> doStartAccountDeletion())
+                .setNegativeButton(bn ? "না" : "No", null)
+                .show();
+    }
+
+    private void doStartAccountDeletion() {
         setDeleting(true);
         ApiClient.get().deletionPreview(new ApiCallback<DeletionPreview>() {
             @Override public void onSuccess(DeletionPreview preview) {

@@ -13,8 +13,6 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.app.AppCompatDelegate;
-import androidx.core.os.LocaleListCompat;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
@@ -28,6 +26,7 @@ import bd.sammalani.alumni.model.Person;
 import bd.sammalani.alumni.session.SessionManager;
 import bd.sammalani.alumni.util.AvatarView;
 import bd.sammalani.alumni.util.Fmt;
+import bd.sammalani.alumni.util.LocaleHelper;
 
 public class LandingActivity extends AppCompatActivity {
 
@@ -44,6 +43,12 @@ public class LandingActivity extends AppCompatActivity {
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable tickRunnable = this::tick;
+
+    @Override
+    protected void attachBaseContext(android.content.Context newBase) {
+        String lang = SessionManager.get(newBase).getLang();
+        super.attachBaseContext(LocaleHelper.apply(newBase, lang));
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -157,6 +162,7 @@ public class LandingActivity extends AppCompatActivity {
 
         ApiClient.get().lookupBatch(year, null, new ApiCallback<List<Person>>() {
             @Override public void onSuccess(List<Person> people) {
+                if (isDestroyed() || isFinishing()) return;
                 btnSearchBatch.setEnabled(true);
                 if (people == null || people.isEmpty()) {
                     tvSearchEmpty.setVisibility(View.VISIBLE);
@@ -216,6 +222,7 @@ public class LandingActivity extends AppCompatActivity {
                 }
             }
             @Override public void onError(String en, String bn) {
+                if (isDestroyed() || isFinishing()) return;
                 btnSearchBatch.setEnabled(true);
                 tvSearchEmpty.setVisibility(View.VISIBLE);
             }
@@ -224,10 +231,8 @@ public class LandingActivity extends AppCompatActivity {
 
     private void toggleLang() {
         SessionManager sm = SessionManager.get(this);
-        boolean wasBn = sm.isBn();
-        String newLang = wasBn ? "en" : "bn";
+        String newLang = sm.isBn() ? "en" : "bn";
         sm.setLang(newLang);
-        LocaleListCompat localeList = LocaleListCompat.forLanguageTags(newLang);
-        AppCompatDelegate.setApplicationLocales(localeList);
+        recreate();
     }
 }

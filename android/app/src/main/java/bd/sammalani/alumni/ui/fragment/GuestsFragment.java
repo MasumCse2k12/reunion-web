@@ -245,7 +245,7 @@ public class GuestsFragment extends Fragment {
         tvMyTicketType.setText(alumni.displayName(bn));
         tvMyTicketNote.setText(alumni.displayNote(bn));
         tvMyTicketPrice.setText(alumni.amount > 0
-                ? getString(R.string.common_taka_symbol) + " " + Fmt.money(alumni.amount, bn)
+                ? Fmt.money(alumni.amount, bn)
                 : getString(R.string.guests_free));
     }
 
@@ -295,7 +295,7 @@ public class GuestsFragment extends Fragment {
         if (currentReg != null) total = currentReg.amountDue;
         costRows.removeAllViews();
         tvTotalAmount.setText(total > 0
-                ? getString(R.string.common_taka_symbol) + " " + Fmt.money(total, bn)
+                ? Fmt.money(total, bn)
                 : getString(R.string.guests_free));
     }
 

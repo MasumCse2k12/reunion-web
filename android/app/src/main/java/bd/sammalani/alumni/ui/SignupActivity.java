@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import bd.sammalani.alumni.R;
+import bd.sammalani.alumni.util.LocaleHelper;
 import bd.sammalani.alumni.api.ApiCallback;
 import bd.sammalani.alumni.api.ApiClient;
 import bd.sammalani.alumni.model.Person;
@@ -35,6 +36,12 @@ import bd.sammalani.alumni.session.SessionManager;
 import bd.sammalani.alumni.ui.adapter.MemberAdapter;
 
 public class SignupActivity extends AppCompatActivity implements MemberAdapter.OnMemberClickListener {
+
+    @Override
+    protected void attachBaseContext(android.content.Context newBase) {
+        String lang = SessionManager.get(newBase).getLang();
+        super.attachBaseContext(LocaleHelper.apply(newBase, lang));
+    }
 
     private View btnBack;
     private TextView tvLang;

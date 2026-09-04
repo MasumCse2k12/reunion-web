@@ -23,8 +23,15 @@ import bd.sammalani.alumni.R;
 import bd.sammalani.alumni.api.ApiCallback;
 import bd.sammalani.alumni.api.ApiClient;
 import bd.sammalani.alumni.session.SessionManager;
+import bd.sammalani.alumni.util.LocaleHelper;
 
 public class LoginActivity extends AppCompatActivity {
+
+    @Override
+    protected void attachBaseContext(android.content.Context newBase) {
+        String lang = SessionManager.get(newBase).getLang();
+        super.attachBaseContext(LocaleHelper.apply(newBase, lang));
+    }
 
     private LinearLayout stepPhone, stepOtp;
     private TextInputEditText etPhone;

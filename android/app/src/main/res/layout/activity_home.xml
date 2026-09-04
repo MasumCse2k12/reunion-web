@@ -4,7 +4,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@color/paper">
+    android:background="@color/paper"
+    android:fitsSystemWindows="true">
 
     <FrameLayout
         android:id="@+id/fragmentContainer"

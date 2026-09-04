@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import bd.sammalani.alumni.R;
+import bd.sammalani.alumni.util.LocaleHelper;
 import bd.sammalani.alumni.api.ApiCallback;
 import bd.sammalani.alumni.api.ApiClient;
 import bd.sammalani.alumni.model.Person;
@@ -23,6 +24,12 @@ import bd.sammalani.alumni.ui.adapter.MemberAdapter;
 import bd.sammalani.alumni.util.Fmt;
 
 public class BatchDetailActivity extends AppCompatActivity {
+
+    @Override
+    protected void attachBaseContext(android.content.Context newBase) {
+        String lang = SessionManager.get(newBase).getLang();
+        super.attachBaseContext(LocaleHelper.apply(newBase, lang));
+    }
 
     private TextView tvToolbarTitle, tvBatchYear, tvBatchStats, tvLoading, tvLang;
     private ProgressBar progressBatch;
@@ -81,7 +88,9 @@ public class BatchDetailActivity extends AppCompatActivity {
 
                 int total = people.size();
                 int found = 0;
-                for (Person p : people) if ("CLAIMED".equals(p.status)) found++;
+                for (Person p : people) {
+                    if ("CLAIMED".equals(p.status) || "VERIFIED".equals(p.status)) found++;
+                }
                 int missing = total - found;
                 int pct = total > 0 ? (found * 100 / total) : 0;
 
