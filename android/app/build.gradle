@@ -26,7 +26,7 @@ def hasSigningConfig = keystorePath != null && rootProject.file(keystorePath).ex
 // and an IP baked into a shipped APK cannot be redirected if the server moves.
 // Override without editing this file:  -PapiBaseUrl=…  or  API_BASE_URL=…
 def prodApiBaseUrl = System.getenv('API_BASE_URL') ?:
-        (project.findProperty('apiBaseUrl') ?: 'https://107.167.94.230/smbc')
+        (project.findProperty('apiBaseUrl') ?: 'https://myinstitutehub.com/smbc')
 def contactPhone = '01943177909'
 
 // A release build must never ship a cleartext URL. Shipping one is what got
@@ -38,7 +38,7 @@ gradle.taskGraph.whenReady { graph ->
     if (releasing && !prodApiBaseUrl.startsWith('https://')) {
         throw new GradleException(
                 "Release builds require an https:// API_BASE_URL, got: ${prodApiBaseUrl}\n" +
-                "Set it with -PapiBaseUrl=https://107.167.94.230/smbc or API_BASE_URL=…")
+                "Set it with -PapiBaseUrl=https://myinstitutehub.com/smbc or API_BASE_URL=…")
     }
 }
 
@@ -50,7 +50,7 @@ android {
         applicationId "bd.sammalani.alumni"
         minSdk 21          // Android 5.0 — covers 99 %+ of active devices
         targetSdk 37
-        versionCode 21    // 5 = rejected WebView build; 12 = rejected targetSdk 35 build
+        versionCode 22    // 5 = rejected WebView build; 12 = rejected targetSdk 35 build
         versionName "2.0.1"
 
         buildConfigField "String", "API_BASE_URL", "\"${prodApiBaseUrl}\""

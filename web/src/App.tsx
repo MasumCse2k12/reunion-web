@@ -81,6 +81,7 @@ export default function App() {
                 deletion route to be reachable without installing the app or
                 signing in. DeleteAccount does its own phone + code check. */}
             <Route path="/privacy" element={<Privacy />} />
+            <Route path="/privacy-policy" element={<Privacy />} />
             <Route path="/account-deletion" element={<DeleteAccount />} />
 
             <Route
